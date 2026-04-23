@@ -1,4 +1,5 @@
 from flask import Flask
+from whitenoise import WhiteNoise
 from config import Config
 
 
@@ -26,6 +27,9 @@ def criar_app():
 
 # Cria a instância global do app
 app = criar_app()
+
+# WhiteNoise serve os arquivos estáticos (CSS, JS) corretamente no Render
+app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/', prefix='static')
 
 if __name__ == '__main__':
     # Roda o servidor de desenvolvimento em http://localhost:5000

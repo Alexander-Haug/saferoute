@@ -1,4 +1,5 @@
 Flask>=3.0.0
+whitenoise>=6.0
 pandas>=2.0.0
 folium>=0.17.0
 python-dotenv>=1.0.0
