@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% block titulo %}SafeRoute — Rotas Seguras em São Paulo{% endblock %}
+
+{% block conteudo %}
+
+<!-- ══════════════ CAPA DE ENTRADA ══════════════ -->
+<section class="landing-cover" id="landing">
+  <div class="landing-content">
+
+    <!-- Logo grande -->
+    <div class="landing-logo-wrap">
+      <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="64" height="72">
+        <path d="M24 2C15.16 2 8 9.16 8 18c0 11.5 16 34 16 34S40 29.5 40 18C40 9.16 32.84 2 24 2z"
+              fill="#4a9eff" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+        <path d="M24 9 L17 13.5 L17 21.5 Q17 26 24 28.5 Q31 26 31 21.5 L31 13.5 Z"
+              fill="white" opacity="0.95"/>
+        <path d="M21 20.5 L23 23 L28 17" stroke="#1a3a5c" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+
+    <h1 class="landing-titulo">SafeRoute</h1>
+    <p class="landing-subtitulo">Navegue com segurança pelas ruas de São Paulo</p>
+
+    <!-- Chips de funcionalidade -->
+    <div class="landing-chips">
+      <span class="chip">&#128663; Risco por via</span>
+      <span class="chip">&#128663; Rotas por nível de risco</span>
+      <span class="chip">&#9888;&#65039; Alertas de área</span>
+    </div>
+
+    <!-- Estatísticas -->
+    {% if stats and stats.total > 0 %}
+    <div class="landing-stats">
+      <div class="landing-stat">
+        <span class="stat-num">{{ stats.total | int }}</span>
+        <span class="stat-label">ocorrências<br>analisadas</span>
+      </div>
+      <div class="landing-stat">
+        <span class="stat-num">{{ stats.bairros }}</span>
+        <span class="stat-label">bairros<br>mapeados</span>
+      </div>
+      <div class="landing-stat">
+        <span class="stat-num">3</span>
+        <span class="stat-label">estratégias<br>de rota</span>
+      </div>
+    </div>
+    {% endif %}
+
+    <a href="#app" class="landing-cta" onclick="rolarParaApp()">
+      Explorar o mapa &darr;
+    </a>
+  </div>
+
+  <!-- Indicador de scroll -->
+  <div class="landing-scroll-hint" aria-hidden="true">
+    <div class="scroll-seta"></div>
+  </div>
+</section>
+
+<!-- ══════════════ APLICAÇÃO ══════════════ -->
+<div id="app">
+
+<!-- Banner de alerta de risco (Fase 7) -->
+<div id="alerta-risco" class="alerta-risco" style="display:none">
+  <span class="alerta-icone">&#9888;</span>
+  <div class="alerta-texto">
+    <strong>Você está em uma área de <span id="alerta-nivel">risco</span>!</strong>
+    <span id="alerta-score"></span>
+  </div>
+  <button class="alerta-fechar" onclick="fecharAlerta()" title="Fechar">&times;</button>
+</div>
+
+<section class="hero">
+  <h1>Viaje com mais segurança por São Paulo</h1>
+  <p>Informe sua origem e destino para ver as rotas rankeadas por nível de risco.</p>
+  {% if stats and stats.total > 0 %}
+  <div class="stats-bar">
+    <span>{{ stats.total | int }} ocorrências analisadas</span>
+    <span>{{ stats.bairros }} bairros mapeados</span>
+    <span>Crime mais comum: {{ stats.tipo_mais_comum }}</span>
+  </div>
+  {% endif %}
+</section>
+
+<!-- Cards de categoria -->
+<section class="cards-categoria">
+  <button class="card-cat ativo" data-cat="todos" onclick="filtrarCategoria(this)">
+    <div class="card-cat-topo">
+      <span class="cat-icone">&#128202;</span>
+      <span class="cat-badge badge-vermelho">ALTA PRIORIDADE</span>
+    </div>
+    <h3>Índice de Criminalidade</h3>
+    <p>Visão geral de todos os tipos de crime por bairro.</p>
+  </button>
+  <button class="card-cat" data-cat="roubos_furtos" onclick="filtrarCategoria(this)">
+    <div class="card-cat-topo">
+      <span class="cat-icone">&#128274;</span>
+      <span class="cat-badge badge-laranja">MONITORADO</span>
+    </div>
+    <h3>Roubos e Furtos</h3>
+    <p>Roubos, furtos e crimes contra o patrimônio.</p>
+  </button>
+  <button class="card-cat" data-cat="homicidios" onclick="filtrarCategoria(this)">
+    <div class="card-cat-topo">
+      <span class="cat-icone">&#128202;</span>
+      <span class="cat-badge badge-azul">ANALÍTICO</span>
+    </div>
+    <h3>Homicídios Dolosos</h3>
+    <p>Distribuição de crimes letais por região.</p>
+  </button>
+  <button class="card-cat" data-cat="seguras" onclick="filtrarCategoria(this)">
+    <div class="card-cat-topo">
+      <span class="cat-icone">&#9989;</span>
+      <span class="cat-badge badge-verde">SEGURO</span>
+    </div>
+    <h3>Zonas Seguras</h3>
+    <p>Bairros com menor índice de criminalidade.</p>
+  </button>
+</section>
+
+<div class="layout-principal">
+
+  <!-- Painel de busca -->
+  <aside class="painel-busca">
+    <h2>Planejar rota</h2>
+    <form action="/rota" method="POST">
+      <div class="campo">
+        <label for="origem">Origem</label>
+        <input type="text" id="origem" name="origem"
+               placeholder="Ex: Praça da Sé, São Paulo" required>
+      </div>
+      <div class="campo">
+        <label for="destino">Destino</label>
+        <input type="text" id="destino" name="destino"
+               placeholder="Ex: Avenida Paulista, 1000" required>
+      </div>
+      <div class="campo">
+        <label for="horario">Horário da viagem</label>
+        <input type="time" id="horario" name="horario">
+      </div>
+      <div class="campo">
+        <label for="estrategia">Prioridade da rota</label>
+        <select id="estrategia" name="estrategia">
+          <option value="equilibrada">Equilibrada (recomendado)</option>
+          <option value="segura">Mais segura</option>
+          <option value="rapida">Mais rápida</option>
+        </select>
+      </div>
+      <button type="submit" class="botao-principal">Encontrar Rota</button>
+    </form>
+
+    <!-- Legenda -->
+    <div class="legenda-heatmap">
+      <h3>Legenda do mapa</h3>
+      <div class="legenda-item"><span class="cor" style="background:#27ae60"></span> Baixo risco</div>
+      <div class="legenda-item"><span class="cor" style="background:#f1c40f"></span> Risco médio</div>
+      <div class="legenda-item"><span class="cor" style="background:#e67e22"></span> Alto risco</div>
+      <div class="legenda-item"><span class="cor" style="background:#e74c3c"></span> Risco crítico</div>
+    </div>
+
+    <button class="botao-reporte-toggle" onclick="toggleReporte()">
+      + Reportar ocorrência na região
+    </button>
+
+    <div id="painel-reporte" class="painel-reporte" style="display:none">
+      <h3>Reportar ocorrência</h3>
+      <form action="/reportar" method="POST">
+        <input type="hidden" id="campo-lat" name="latitude">
+        <input type="hidden" id="campo-lon" name="longitude">
+        <div class="campo">
+          <label for="tipo">Tipo de ocorrência</label>
+          <select id="tipo" name="tipo" required>
+            <option value="">Selecione...</option>
+            <option>Assalto / Roubo</option>
+            <option>Furto</option>
+            <option>Iluminação precária</option>
+            <option>Suspeito / Movimento estranho</option>
+            <option>Acidente</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label for="descricao">Descrição (opcional)</label>
+          <textarea id="descricao" name="descricao" rows="2"
+                    placeholder="Ex: Grupo suspeito na esquina da Rua X"></textarea>
+        </div>
+        <p id="status-localizacao" class="status-loc">Localizando sua posição...</p>
+        <button type="submit" class="botao-principal">Enviar reporte</button>
+        <button type="button" class="botao-cancelar" onclick="toggleReporte()">Cancelar</button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Mapa MapLibre GL JS -->
+  <section class="mapa-container">
+    <div id="mapa-gl" style="height:100%;width:100%;border-radius:8px;"></div>
+    <div id="mapa-loading" class="mapa-loading">
+      <div class="spinner"></div>
+      <span id="mapa-loading-msg">Carregando mapa…</span>
+    </div>
+  </section>
+
+</div>
+</div><!-- /#app -->
+
+{% endblock %}
+
+{% block scripts %}{% endblock %}

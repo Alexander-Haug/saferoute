@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Resultado — SafeRoute{% endblock %}
+
+{% block conteudo %}
+
+<section class="resultado-cabecalho">
+  <a href="/" class="link-voltar">&larr; Nova busca</a>
+  <h1>Rotas encontradas</h1>
+  <p class="resultado-meta">
+    <strong>{{ resultado.origem }}</strong> &rarr; <strong>{{ resultado.destino }}</strong>
+    &nbsp;&bull;&nbsp; {{ resultado.horario }}
+    &nbsp;&bull;&nbsp; Prioridade: <strong>{{ nome_estrategia }}</strong>
+  </p>
+</section>
+
+<div class="layout-resultado">
+
+  <!-- Lista de rotas rankeadas -->
+  <section class="lista-rotas">
+    <h2>Rotas rankeadas</h2>
+
+    {% for rota in resultado.rotas %}
+    <div class="rota-card {% if loop.first %}rota-recomendada{% endif %}">
+
+      <div class="rota-header">
+        <span class="rank-badge">{{ loop.index }}&ordm;</span>
+        <span class="rota-nome">{{ rota.nome }}</span>
+        {% if loop.first %}
+          <span class="tag-recomendada">Recomendada</span>
+        {% endif %}
+        <span class="risco-badge" style="background:{{ rota.cor_risco }}">
+          {{ rota.nivel_risco }} risco
+        </span>
+      </div>
+
+      <div class="rota-info">
+        <div class="info-item">
+          <span class="info-label">Distância</span>
+          <span class="info-valor">{{ rota.distancia_km }} km</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Tempo estimado</span>
+          <span class="info-valor">{{ rota.duracao_min }} min</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Score de risco</span>
+          <span class="info-valor">{{ (rota.score_risco * 100) | round | int }}%</span>
+        </div>
+      </div>
+
+      <!-- Barra visual de risco -->
+      <div class="barra-risco-container">
+        <div class="barra-risco" style="width: {{ (rota.score_risco * 100) | round | int }}%; background: {{ rota.cor_risco }};"></div>
+      </div>
+
+    </div>
+    {% endfor %}
+
+    <p class="aviso-dados">
+      Risco calculado com base em dados históricos da SSP-SP.
+      Condições reais podem variar.
+    </p>
+  </section>
+
+  <!-- Mapa com as rotas desenhadas -->
+  <section class="mapa-resultado-container">
+    <h2>Mapa das rotas</h2>
+    <div class="mapa-resultado">
+      {% if mapa_html %}
+        {{ mapa_html | safe }}
+      {% else %}
+        <div class="mapa-placeholder"><p>Mapa indisponível.</p></div>
+      {% endif %}
+    </div>
+
+    <div class="legenda-resultado">
+      {% for rota in resultado.rotas %}
+      <span class="legenda-rota">
+        <span class="cor-linha" style="background:{{ rota.cor_risco }}"></span>
+        {{ rota.nome }} ({{ rota.nivel_risco }})
+      </span>
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}

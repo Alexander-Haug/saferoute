@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Histórico de Rotas — SafeRoute{% endblock %}
+
+{% block conteudo %}
+
+<section class="resultado-cabecalho">
+  <a href="/" class="link-voltar">&larr; Voltar ao mapa</a>
+  <h1>Histórico de rotas</h1>
+  <p class="resultado-meta">Últimas {{ registros | length }} buscas realizadas neste dispositivo.</p>
+</section>
+
+{% if registros %}
+<div class="tabela-historico-wrapper">
+  <table class="tabela-historico">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Origem</th>
+        <th>Destino</th>
+        <th>Horário</th>
+        <th>Prioridade</th>
+        <th>Risco</th>
+        <th>Tempo</th>
+        <th>Distância</th>
+        <th>Data</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in registros %}
+      {% set score = (r.score_risco * 100) | round | int %}
+      {% if r.score_risco < 0.15 %}
+        {% set cor = '#27ae60' %}{% set nivel = 'Baixo' %}
+      {% elif r.score_risco < 0.35 %}
+        {% set cor = '#f39c12' %}{% set nivel = 'Médio' %}
+      {% elif r.score_risco < 0.6 %}
+        {% set cor = '#e67e22' %}{% set nivel = 'Alto' %}
+      {% else %}
+        {% set cor = '#e74c3c' %}{% set nivel = 'Crítico' %}
+      {% endif %}
+      <tr>
+        <td class="col-num">{{ loop.index }}</td>
+        <td class="col-endereco">{{ r.origem }}</td>
+        <td class="col-endereco">{{ r.destino }}</td>
+        <td class="col-centro">{{ r.horario or '—' }}</td>
+        <td class="col-centro">
+          {% if r.estrategia == 'segura' %}Mais Segura
+          {% elif r.estrategia == 'rapida' %}Mais Rápida
+          {% else %}Equilibrada{% endif %}
+        </td>
+        <td class="col-centro">
+          <span class="risco-badge" style="background:{{ cor }}">{{ nivel }}</span>
+        </td>
+        <td class="col-centro">{{ r.duracao_min | round(1) }} min</td>
+        <td class="col-centro">{{ r.distancia_km | round(1) }} km</td>
+        <td class="col-data">{{ r.criado_em[:16] | replace('T', ' ') }}</td>
+        <td>
+          <!-- Botão para refazer a mesma busca -->
+          <form action="/rota" method="POST" style="display:inline">
+            <input type="hidden" name="origem"     value="{{ r.origem }}">
+            <input type="hidden" name="destino"    value="{{ r.destino }}">
+            <input type="hidden" name="horario"    value="{{ r.horario or '08:00' }}">
+            <input type="hidden" name="estrategia" value="{{ r.estrategia or 'equilibrada' }}">
+            <button type="submit" class="botao-refazer">Refazer</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="historico-vazio">
+  <p>Nenhuma rota buscada ainda.</p>
+  <a href="/" class="botao-principal" style="display:inline-block; margin-top:1rem; text-decoration:none">
+    Buscar minha primeira rota
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}

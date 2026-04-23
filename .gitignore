@@ -1,0 +1,25 @@
+# Ambiente virtual
+venv/
+env/
+.venv/
+
+# Variáveis de ambiente (NUNCA subir ao GitHub)
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Banco de dados local
+*.db
+*.sqlite
+
+# Dados grandes (baixados em produção automaticamente)
+dados/sp_rodovias.json
+dados/sp_ruas.gpkg
+dados/mapa_*.html
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-tema="claro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block titulo %}SafeRoute{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css">
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+</head>
+<body>
+
+  <header class="cabecalho">
+
+    <!-- Logo com ícone SVG -->
+    <a class="logo" href="/">
+      <svg class="logo-icone" viewBox="0 0 32 36" fill="none" xmlns="http://www.w3.org/2000/svg"
+           width="28" height="32" aria-hidden="true">
+        <!-- Pin de localização -->
+        <path d="M16 2C10.48 2 6 6.48 6 12c0 7.5 10 20 10 20s10-12.5 10-20c0-5.52-4.48-10-10-10z"
+              fill="#4a9eff" stroke="#fff" stroke-width="1.5"/>
+        <!-- Escudo integrado ao pin -->
+        <path d="M16 7 L12 9.5 L12 13.5 Q12 16 16 17.5 Q20 16 20 13.5 L20 9.5 Z"
+              fill="#fff" opacity="0.92"/>
+        <path d="M14.5 12.5 L15.5 13.8 L18 11" stroke="#1a3a5c" stroke-width="1.3"
+              stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <span class="logo-texto">SafeRoute</span>
+    </a>
+
+    <nav>
+      <a href="/">Mapa</a>
+      <a href="/rota">Buscar Rota</a>
+      <a href="/historico">Histórico</a>
+    </nav>
+
+    <!-- Botão dark/light mode -->
+    <button class="btn-tema" id="btn-tema" onclick="alternarTema()" title="Alternar modo claro/escuro"
+            aria-label="Alternar tema">
+      <!-- Ícone sol (modo claro ativo → mostra lua para mudar para escuro) -->
+      <svg id="icone-lua" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"
+           xmlns="http://www.w3.org/2000/svg" style="display:none">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/>
+      </svg>
+      <!-- Ícone lua (modo escuro ativo → mostra sol para mudar para claro) -->
+      <svg id="icone-sol" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"
+           xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42
+                 M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+      </svg>
+    </button>
+
+  </header>
+
+  <main class="conteudo-principal">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for categoria, mensagem in messages %}
+          <div class="alerta alerta-{{ categoria }}">{{ mensagem }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  <footer class="rodape">
+    <p>SafeRoute &mdash; PUC-SP / CDIA &bull; Dados: SSP-SP via Base dos Dados</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
