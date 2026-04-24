@@ -5,7 +5,11 @@ from models.estrategias import ESTRATEGIAS
 # APIs gratuitas — sem necessidade de chave
 _PHOTON    = "https://photon.komoot.io/api/"        # geocodificador primário
 _NOMINATIM = "https://nominatim.openstreetmap.org/search"  # fallback
-_OSRM      = "http://router.project-osrm.org/route/v1/driving"
+# Servidores OSRM em ordem de preferência (mais estável primeiro)
+_OSRM_SERVIDORES = [
+    "https://routing.openstreetmap.de/routed-car/route/v1/driving",
+    "http://router.project-osrm.org/route/v1/driving",
+]
 _HEADERS   = {"User-Agent": "SafeRoute/1.0 (PUC-SP CDIA)"}
 
 
@@ -76,21 +80,26 @@ class SafeRouteFacade:
     # 2. Roteamento via OSRM                                               #
     # ------------------------------------------------------------------ #
     def _buscar_rotas_osrm(self, lat1, lon1, lat2, lon2) -> list:
-        """Retorna até 3 rotas alternativas com geometria (lista de pontos)."""
-        url = f"{_OSRM}/{lon1},{lat1};{lon2},{lat2}"
-        try:
-            resp = requests.get(
-                url,
-                params={"alternatives": "true", "geometries": "geojson", "overview": "full"},
-                headers=_HEADERS,
-                timeout=15,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-        except Exception as e:
-            raise RuntimeError(f"Erro ao consultar OSRM: {e}")
+        """Tenta cada servidor OSRM em ordem até obter resposta."""
+        params = {"alternatives": "true", "geometries": "geojson", "overview": "full"}
+        ultimo_erro = None
 
-        if data.get("code") != "Ok" or not data.get("routes"):
+        for base_url in _OSRM_SERVIDORES:
+            url = f"{base_url}/{lon1},{lat1};{lon2},{lat2}"
+            try:
+                resp = requests.get(url, params=params, headers=_HEADERS, timeout=20)
+                resp.raise_for_status()
+                data = resp.json()
+                if data.get("code") == "Ok" and data.get("routes"):
+                    break  # sucesso — sai do loop
+                ultimo_erro = "Nenhuma rota retornada pelo servidor"
+            except Exception as e:
+                ultimo_erro = str(e)
+                continue  # tenta o próximo servidor
+        else:
+            raise RuntimeError(f"Todos os servidores OSRM falharam. Último erro: {ultimo_erro}")
+
+        if not data.get("routes"):
             return []
 
         rotas = []
