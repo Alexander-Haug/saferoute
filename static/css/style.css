@@ -22,20 +22,31 @@ body {
   gap: 2rem;
 }
 
-/* Logo com ícone SVG */
+/* Logo navbar */
 .logo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #fff;
   text-decoration: none;
   flex-shrink: 0;
 }
 
-.logo-icone { flex-shrink: 0; }
-.logo-texto { letter-spacing: 0.01em; }
+.logo-img {
+  height: 44px;
+  width: auto;
+  background: #fff;
+  border-radius: 10px;
+  padding: 4px 10px;
+  display: block;
+}
+
+/* Logo landing page */
+.landing-logo-img {
+  height: 130px;
+  width: auto;
+  background: #fff;
+  border-radius: 20px;
+  padding: 12px 20px;
+}
 
 /* Botão dark/light mode */
 .btn-tema {

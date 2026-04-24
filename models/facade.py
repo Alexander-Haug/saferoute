@@ -3,7 +3,8 @@ from models.gerenciador_dados import GerenciadorDeDados
 from models.estrategias import ESTRATEGIAS
 
 # APIs gratuitas — sem necessidade de chave
-_NOMINATIM = "https://nominatim.openstreetmap.org/search"
+_PHOTON    = "https://photon.komoot.io/api/"        # geocodificador primário
+_NOMINATIM = "https://nominatim.openstreetmap.org/search"  # fallback
 _OSRM      = "http://router.project-osrm.org/route/v1/driving"
 _HEADERS   = {"User-Agent": "SafeRoute/1.0 (PUC-SP CDIA)"}
 
@@ -24,11 +25,37 @@ class SafeRouteFacade:
     # 1. Geocodificação                                                    #
     # ------------------------------------------------------------------ #
     def geocodificar(self, endereco: str) -> tuple:
-        """Converte texto de endereço em (latitude, longitude)."""
-        # Garante que a busca seja restrita a SP para evitar resultados errados
+        """
+        Converte endereço em (latitude, longitude).
+        Tenta Photon primeiro (mais tolerante a rate limits em servidores cloud),
+        cai no Nominatim como fallback.
+        """
         sufixo = ", São Paulo, SP, Brasil"
         query  = endereco if "são paulo" in endereco.lower() or ", sp" in endereco.lower() else endereco + sufixo
 
+        # 1. Photon (primário — sem restrição de IP de cloud)
+        try:
+            resp = requests.get(
+                _PHOTON,
+                params={
+                    "q":     query,
+                    "limit": 1,
+                    "lang":  "pt",
+                    # Bounding box da Grande São Paulo (lon_min, lat_min, lon_max, lat_max)
+                    "bbox":  "-47.5,-24.5,-45.5,-22.5",
+                },
+                headers=_HEADERS,
+                timeout=10,
+            )
+            resp.raise_for_status()
+            features = resp.json().get("features", [])
+            if features:
+                lon, lat = features[0]["geometry"]["coordinates"]
+                return float(lat), float(lon)
+        except Exception:
+            pass  # segue para o fallback
+
+        # 2. Nominatim (fallback)
         try:
             resp = requests.get(
                 _NOMINATIM,
@@ -38,13 +65,12 @@ class SafeRouteFacade:
             )
             resp.raise_for_status()
             resultados = resp.json()
+            if resultados:
+                return float(resultados[0]["lat"]), float(resultados[0]["lon"])
         except Exception as e:
-            raise RuntimeError(f"Erro ao consultar Nominatim: {e}")
+            raise RuntimeError(f"Erro ao geocodificar '{endereco}': {e}")
 
-        if not resultados:
-            raise ValueError(f"Endereço não encontrado: '{endereco}'. Tente ser mais específico.")
-
-        return float(resultados[0]["lat"]), float(resultados[0]["lon"])
+        raise ValueError(f"Endereço não encontrado: '{endereco}'. Tente ser mais específico.")
 
     # ------------------------------------------------------------------ #
     # 2. Roteamento via OSRM                                               #

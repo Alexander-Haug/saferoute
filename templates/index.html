@@ -9,14 +9,8 @@
 
     <!-- Logo grande -->
     <div class="landing-logo-wrap">
-      <svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg" width="64" height="72">
-        <path d="M24 2C15.16 2 8 9.16 8 18c0 11.5 16 34 16 34S40 29.5 40 18C40 9.16 32.84 2 24 2z"
-              fill="#4a9eff" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
-        <path d="M24 9 L17 13.5 L17 21.5 Q17 26 24 28.5 Q31 26 31 21.5 L31 13.5 Z"
-              fill="white" opacity="0.95"/>
-        <path d="M21 20.5 L23 23 L28 17" stroke="#1a3a5c" stroke-width="2.2"
-              stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      </svg>
+      <img src="{{ url_for('static', filename='logo.png') }}"
+           alt="SafeRoute" class="landing-logo-img">
     </div>
 
     <h1 class="landing-titulo">SafeRoute</h1>
