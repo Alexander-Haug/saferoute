@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Histórico · SafeRoute{% endblock %}
+
+{% block content %}
+<section class="sr-page-shell">
+  <h1>⏱️ Suas buscas recentes</h1>
+  {% if logado %}
+    <p class="sr-muted">Sincronizado com a sua conta.</p>
+    {% if items %}
+      <ul class="sr-hist-list">
+        {% for h in items %}
+          <li>
+            <a href="{{ url_for('resultado_rota', origem=h.origem, destino=h.destino, modo=h.modo, prioridade=h.prioridade) }}">
+              <strong>{{ h.origem }} → {{ h.destino }}</strong>
+              <span class="sr-mini sr-muted">
+                Score {{ h.score_risco }} · {{ h.tempo_min }} min · {{ h.modo }} ·
+                {{ h.data_busca[:16]|replace('T', ' ') }}
+              </span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="sr-muted">Nenhuma busca registrada.</p>
+    {% endif %}
+  {% else %}
+    <p class="sr-muted">
+      Você não está logado. As buscas abaixo ficam só neste navegador (localStorage).
+      <a href="{{ url_for('auth.login') }}">Faça login</a> para sincronizar.
+    </p>
+    <ul id="historicoList" class="sr-hist-list"><li class="sr-muted">Carregando…</li></ul>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+{% if not logado %}
+<script>
+  const lista = document.getElementById('historicoList');
+  const itens = JSON.parse(localStorage.getItem('saferoute:historico') || '[]');
+  lista.innerHTML = itens.length === 0
+    ? '<li class="sr-muted">Nenhuma busca ainda.</li>'
+    : itens.map(it => `
+        <li>
+          <a href="/app/rota/resultado?origem=${encodeURIComponent(it.origem)}&destino=${encodeURIComponent(it.destino)}&modo=${it.modo||'ape'}&prioridade=${it.prioridade||'equilibrada'}">
+            <strong>${it.origem} → ${it.destino}</strong>
+            <span class="sr-mini sr-muted">${new Date(it.ts).toLocaleString('pt-BR')}</span>
+          </a>
+        </li>`).join('');
+</script>
+{% endif %}
+{% endblock %}

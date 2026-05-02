@@ -1,0 +1,25 @@
+# Segredos
+.env
+*.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Banco local e cache gerados em runtime
+instance/
+data/saferoute.db
+data/geocode_cache.db
+data/analytics.db
+*.sqlite
+*.sqlite3
+
+# IDE / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

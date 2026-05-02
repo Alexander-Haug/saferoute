@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Criar conta · SafeRoute{% endblock %}
+{% block body_class %}sr-page-auth{% endblock %}
+
+{% block content %}
+<section class="sr-auth-shell">
+  <div class="sr-auth-card">
+    <div class="sr-auth-icon">✨</div>
+    <h1>Criar sua conta</h1>
+    <p class="sr-muted">Leva menos de um minuto.</p>
+
+    <form method="post" class="sr-form sr-form-auth" id="registerForm">
+      <label class="sr-field">
+        <span>Nome completo</span>
+        <input type="text" name="nome" required minlength="2"
+               value="{{ nome or '' }}" placeholder="Seu nome">
+      </label>
+      <label class="sr-field">
+        <span>E-mail</span>
+        <input type="email" name="email" required autocomplete="email"
+               value="{{ email or '' }}" placeholder="voce@exemplo.com">
+      </label>
+      <label class="sr-field">
+        <span>Senha</span>
+        <input type="password" name="senha" id="senhaInput" required
+               minlength="8" autocomplete="new-password" placeholder="Mín. 8 caracteres">
+        <span class="sr-pwstrength" id="pwStrength" data-level="0">
+          <span class="sr-pwstrength-bar"></span>
+          <span class="sr-pwstrength-bar"></span>
+          <span class="sr-pwstrength-bar"></span>
+          <span class="sr-pwstrength-label">Use letras maiúsculas, minúsculas e números</span>
+        </span>
+      </label>
+      <label class="sr-field">
+        <span>Confirme a senha</span>
+        <input type="password" name="senha_confirmacao" required
+               minlength="8" autocomplete="new-password">
+      </label>
+
+      <button type="submit" class="sr-btn sr-btn-primary sr-btn-pill sr-btn-block sr-btn-large">
+        Criar conta
+      </button>
+    </form>
+
+    <p class="sr-auth-foot">
+      Já tem conta? <a href="{{ url_for('auth.login') }}">Entrar</a>
+    </p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Password strength meter (simples)
+  const input = document.getElementById('senhaInput');
+  const meter = document.getElementById('pwStrength');
+  input?.addEventListener('input', () => {
+    const v = input.value;
+    let s = 0;
+    if (v.length >= 8) s++;
+    if (/[A-Z]/.test(v) && /[a-z]/.test(v)) s++;
+    if (/\d/.test(v) && /[\W_]/.test(v)) s++;
+    meter.dataset.level = s;
+    meter.querySelector('.sr-pwstrength-label').textContent =
+      ['Use letras maiúsculas, minúsculas e números', 'Senha fraca', 'Senha média', 'Senha forte'][s];
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="auto">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F172A">
+  <title>{% block title %}SafeRoute{% endblock %}</title>
+
+  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+
+  <link rel="preconnect" href="https://api.mapbox.com">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+
+  {# Aplica tema antes do paint pra evitar flash branco em dark mode #}
+  <script>
+    (function(){
+      const t = localStorage.getItem('saferoute:theme');
+      if (t === 'escuro' || (t == null && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.setAttribute('data-theme', 'escuro');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'claro');
+      }
+    })();
+  </script>
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="sr-app {% block body_class %}{% endblock %}">
+
+  {# ───────── Splash (uma vez por sessão) ───────── #}
+  <div id="splash" class="sr-splash" aria-hidden="true">
+    <div class="sr-splash-logo">
+      <span class="sr-splash-pin">📍</span>
+      <strong>SafeRoute</strong>
+    </div>
+    <span class="sr-splash-tag">Rotas seguras em São Paulo</span>
+  </div>
+
+  {# ───────── Top bar (compacta, estilo iOS) ───────── #}
+  <header class="sr-topbar">
+    <a href="{{ url_for('landing') }}" class="sr-topbar-brand" aria-label="Início">
+      <span class="sr-topbar-pin">📍</span>
+      <span>SafeRoute</span>
+    </a>
+    <div class="sr-topbar-actions">
+      <button id="themeToggle" class="sr-iconbtn" aria-label="Alternar tema">🌓</button>
+      {% if current_user and current_user.is_authenticated %}
+        <a href="{{ url_for('auth.perfil') }}" class="sr-avatar" title="Perfil">
+          {{ current_user.nome_completo[0]|upper }}
+        </a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="sr-iconbtn" aria-label="Entrar">👤</a>
+      {% endif %}
+    </div>
+  </header>
+
+  {# ───────── Flash messages ───────── #}
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% if msgs %}
+      <div class="sr-flash-stack">
+        {% for cat, msg in msgs %}
+          <div class="sr-flash sr-flash-{{ cat }}">{{ msg }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {# ───────── Conteúdo da página ───────── #}
+  <main class="sr-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  {# ───────── Bottom navigation (estilo nativo) ───────── #}
+  <nav class="sr-bottomnav" aria-label="Navegação principal">
+    <a href="{{ url_for('mapa') }}"
+       class="sr-bn-item {% if request.endpoint == 'mapa' %}is-active{% endif %}">
+      <span class="sr-bn-icon">🗺️</span><span class="sr-bn-label">Mapa</span>
+    </a>
+    <a href="{{ url_for('mapa') }}#search"
+       class="sr-bn-item {% if request.endpoint == 'resultado_rota' %}is-active{% endif %}">
+      <span class="sr-bn-icon">🔍</span><span class="sr-bn-label">Buscar</span>
+    </a>
+    <a href="{{ url_for('historico') }}"
+       class="sr-bn-item {% if request.endpoint == 'historico' %}is-active{% endif %}">
+      <span class="sr-bn-icon">⏱️</span><span class="sr-bn-label">Histórico</span>
+    </a>
+    {% if current_user and current_user.is_authenticated %}
+      <a href="{{ url_for('auth.perfil') }}"
+         class="sr-bn-item {% if request.endpoint == 'auth.perfil' %}is-active{% endif %}">
+        <span class="sr-bn-icon">👤</span><span class="sr-bn-label">Perfil</span>
+      </a>
+    {% else %}
+      <a href="{{ url_for('auth.login') }}"
+         class="sr-bn-item {% if request.endpoint and request.endpoint.startswith('auth.') %}is-active{% endif %}">
+        <span class="sr-bn-icon">👤</span><span class="sr-bn-label">Entrar</span>
+      </a>
+    {% endif %}
+  </nav>
+
+  <div id="toastContainer" class="sr-toast-container" aria-live="polite"></div>
+
+  <script>
+    window.SR_CONFIG = {
+      mapboxToken: {{ mapbox_token|tojson }},
+      isAuthenticated: {{ (current_user and current_user.is_authenticated)|tojson }},
+      apiBase: "/api"
+    };
+  </script>
+  <script src="{{ url_for('static', filename='js/dark_mode.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/loading.js') }}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

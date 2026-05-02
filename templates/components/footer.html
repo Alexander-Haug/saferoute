@@ -1,0 +1,11 @@
+{# Footer com versionamento dinâmico — Tarefa 4.3 #}
+<footer class="sr-footer">
+  <div class="sr-footer-inner">
+    <span>© {{ now_year }} SafeRoute · PUC-SP · Projeto acadêmico</span>
+    <span class="sr-meta" id="footerMeta">
+      Dados atualizados em
+      <strong>{{ metadata.ultima_atualizacao }}</strong>
+      · v{{ metadata.version }}
+    </span>
+  </div>
+</footer>

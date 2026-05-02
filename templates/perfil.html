@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Perfil · SafeRoute{% endblock %}
+{% block body_class %}sr-page-profile{% endblock %}
+
+{% block content %}
+<section class="sr-profile-shell">
+
+  <header class="sr-profile-hero">
+    <div class="sr-avatar sr-avatar-lg">{{ current_user.nome_completo[0]|upper }}</div>
+    <div>
+      <h1>{{ current_user.nome_completo }}</h1>
+      <p class="sr-muted">{{ current_user.email }}</p>
+    </div>
+    <a href="{{ url_for('auth.logout') }}" class="sr-btn sr-btn-ghost sr-btn-pill">Sair</a>
+  </header>
+
+  <div class="sr-profile-grid">
+
+    {# ---- Dados ---- #}
+    <article class="sr-card">
+      <h2>👤 Dados</h2>
+      <form method="post" class="sr-form">
+        <input type="hidden" name="acao" value="dados">
+        <label class="sr-field">
+          <span>Nome completo</span>
+          <input name="nome" value="{{ current_user.nome_completo }}" required>
+        </label>
+        <label class="sr-field">
+          <span>Tema</span>
+          <select name="tema">
+            <option value="claro" {% if current_user.tema == 'claro' %}selected{% endif %}>☀️ Claro</option>
+            <option value="escuro" {% if current_user.tema == 'escuro' %}selected{% endif %}>🌙 Escuro</option>
+          </select>
+        </label>
+        <button class="sr-btn sr-btn-primary sr-btn-pill">Salvar</button>
+      </form>
+    </article>
+
+    {# ---- Senha ---- #}
+    <article class="sr-card">
+      <h2>🔒 Alterar senha</h2>
+      <form method="post" class="sr-form">
+        <input type="hidden" name="acao" value="senha">
+        <label class="sr-field">
+          <span>Senha atual</span>
+          <input type="password" name="senha_atual" required>
+        </label>
+        <label class="sr-field">
+          <span>Nova senha</span>
+          <input type="password" name="nova_senha" required minlength="8">
+        </label>
+        <label class="sr-field">
+          <span>Confirme a nova senha</span>
+          <input type="password" name="nova_senha2" required minlength="8">
+        </label>
+        <button class="sr-btn sr-btn-primary sr-btn-pill">Trocar senha</button>
+      </form>
+    </article>
+
+    {# ---- Favoritas ---- #}
+    <article class="sr-card sr-card-wide">
+      <h2>⭐ Rotas favoritas <span class="sr-muted">({{ favoritas|length }})</span></h2>
+      {% if favoritas %}
+        <ul class="sr-fav-list">
+          {% for f in favoritas %}
+            <li class="sr-fav-row" data-id="{{ f.id }}">
+              <a href="{{ url_for('resultado_rota', origem=f.origem, destino=f.destino, modo=f.modo, prioridade=f.prioridade) }}">
+                <strong>{{ f.nome }}</strong>
+                <span class="sr-muted">{{ f.origem }} → {{ f.destino }}</span>
+              </a>
+              <button class="sr-iconbtn" data-action="del-fav" data-id="{{ f.id }}" aria-label="Remover">🗑️</button>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="sr-muted">Você ainda não salvou rotas. Calcule uma rota e clique em ❤️ Favoritar.</p>
+      {% endif %}
+    </article>
+
+    {# ---- Histórico ---- #}
+    <article class="sr-card sr-card-wide">
+      <h2>⏱️ Histórico recente</h2>
+      {% if historico %}
+        <ul class="sr-hist-list">
+          {% for h in historico %}
+            <li>
+              <a href="{{ url_for('resultado_rota', origem=h.origem, destino=h.destino, modo=h.modo, prioridade=h.prioridade) }}">
+                <strong>{{ h.origem }} → {{ h.destino }}</strong>
+                <span class="sr-mini sr-muted">
+                  Score {{ h.score_risco }} · {{ h.tempo_min }} min · {{ h.modo }} · {{ h.data_busca[:16]|replace('T', ' ') }}
+                </span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="sr-muted">Nenhuma busca ainda.</p>
+      {% endif %}
+    </article>
+
+    {# ---- Zona de perigo ---- #}
+    <article class="sr-card sr-card-danger sr-card-wide">
+      <h2>⚠️ Zona de perigo</h2>
+      <p class="sr-muted">Desativar conta é reversível por suporte (soft-delete). Você sairá da sessão.</p>
+      <form method="post" onsubmit="return confirm('Tem certeza que quer desativar sua conta?');">
+        <input type="hidden" name="acao" value="deletar">
+        <button class="sr-btn sr-btn-danger sr-btn-pill">Desativar minha conta</button>
+      </form>
+    </article>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Deletar favorita via API
+  document.querySelectorAll('[data-action="del-fav"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remover esta favorita?')) return;
+      const id = btn.dataset.id;
+      const r = await fetch(`/api/favoritas/${id}`, { method: 'DELETE' });
+      if (r.ok) btn.closest('li').remove();
+    });
+  });
+</script>
+{% endblock %}

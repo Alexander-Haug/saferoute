@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}SafeRoute · 3 rotas calculadas{% endblock %}
+{% block body_class %}sr-page-result{% endblock %}
+
+{% block head_extra %}
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+{% endblock %}
+
+{% block content %}
+{% if dados.erro %}
+  <div class="sr-error-block">
+    <div class="sr-error-emoji">😕</div>
+    <h2>Não foi possível calcular a rota</h2>
+    <p>{{ dados.erro }}</p>
+    <a href="{{ url_for('mapa') }}" class="sr-btn sr-btn-primary sr-btn-pill">Tentar novamente</a>
+  </div>
+{% else %}
+
+<div class="sr-app-shell sr-app-shell-result">
+
+  {# Mapa #}
+  <div class="sr-map-stage">
+    <div id="resultMap" class="sr-map"></div>
+    <a href="{{ url_for('mapa') }}" class="sr-back-fab" aria-label="Voltar">←</a>
+  </div>
+
+  {# Bottom sheet com os 3 resultados (sempre expandido em desktop) #}
+  <aside class="sr-sheet sr-sheet-result" data-state="open">
+    <button class="sr-sheet-grabber" aria-hidden="true"><span></span></button>
+
+    <header class="sr-sheet-header">
+      <div>
+        <h2>3 rotas para você</h2>
+        <p class="sr-mini">
+          {{ dados.origem.endereco }} →
+          <strong>{{ dados.destino.endereco }}</strong>
+        </p>
+        <p class="sr-mini sr-muted">
+          {{ dados.modo|replace('_',' ')|capitalize }} ·
+          {{ elapsed_ms }} ms ·
+          Tendência destino:
+          {% if dados.tendencia_destino.direcao == 'subindo' %}🔺
+          {% elif dados.tendencia_destino.direcao == 'descendo' %}🔻
+          {% else %}➖{% endif %}
+          {{ dados.tendencia_destino.percentual }}%
+        </p>
+      </div>
+    </header>
+
+    <ul class="sr-route-list" id="routeList">
+      {% for r in dados.rotas %}
+        <li class="sr-route-card {% if r.id == dados.recomendada %}is-recommended{% endif %}"
+            data-id="{{ r.id }}" style="--c: {{ r.cor }}">
+          <div class="sr-route-card-stripe"></div>
+          <div class="sr-route-card-body">
+            <div class="sr-route-head">
+              <strong>{{ r.label }}</strong>
+              {% if r.id == dados.recomendada %}<span class="sr-badge">Recomendada</span>{% endif %}
+            </div>
+            <div class="sr-route-stats">
+              <span title="Score de risco">🛡️ <strong>{{ r.score_risco }}</strong></span>
+              <span>📏 {{ r.distancia_km }} km</span>
+              <span>⏱️ {{ r.tempo_min }} min</span>
+            </div>
+            <p class="sr-route-resumo">{{ r.resumo }}</p>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+
+    <div class="sr-result-actions">
+      <a id="btnNavegar" class="sr-btn sr-btn-primary sr-btn-pill sr-btn-block" target="_blank" rel="noopener">
+        🚀 Iniciar navegação
+      </a>
+      <div class="sr-result-actions-row">
+        <button id="btnFavoritar" class="sr-btn sr-btn-ghost sr-btn-pill">❤️ Favoritar</button>
+        <button id="btnCompartilhar" class="sr-btn sr-btn-ghost sr-btn-pill">🔗 Compartilhar</button>
+      </div>
+      <a href="{{ url_for('mapa') }}" class="sr-btn sr-btn-link">← Nova busca</a>
+    </div>
+  </aside>
+</div>
+
+<script id="routePayload" type="application/json">{{ dados | tojson }}</script>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if not dados.erro %}
+<script src="{{ url_for('static', filename='js/favoritas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/compartilhar.js') }}"></script>
+<script src="{{ url_for('static', filename='js/mapa.js') }}"></script>
+<script src="{{ url_for('static', filename='js/bottom_sheet.js') }}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const dados = JSON.parse(document.getElementById('routePayload').textContent);
+    window.SafeRoute.renderResultMap('resultMap', dados);
+    window.SafeRoute.wireResultActions(dados);
+  });
+</script>
+{% endif %}
+{% endblock %}

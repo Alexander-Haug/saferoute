@@ -1,0 +1,41 @@
+/* ============================================================
+   components.css — overrides finos do Mapbox + tooltips
+   ============================================================ */
+
+/* Mapbox: deixar atribuição menor e harmonizada com o tema */
+.mapboxgl-ctrl-attrib {
+  background: var(--glass) !important;
+  font-size: 10px !important;
+}
+.mapboxgl-ctrl-group {
+  background: var(--bg-elev) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+.mapboxgl-ctrl-group button { width: 36px !important; height: 36px !important; }
+.mapboxgl-popup-content {
+  background: var(--bg-elev) !important;
+  color: var(--text) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-md) !important;
+  font-family: inherit;
+  padding: 12px 14px !important;
+}
+.mapboxgl-popup-tip { display: none !important; }
+
+/* Tooltip simples */
+.sr-tooltip { position: relative; display: inline-block; cursor: help; }
+.sr-tooltip-content {
+  visibility: hidden; opacity: 0;
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  width: 240px; padding: 10px 12px;
+  background: var(--text); color: var(--bg); font-size: .82rem;
+  border-radius: 10px; box-shadow: var(--shadow-md);
+  transition: opacity .15s ease, visibility .15s ease;
+  z-index: 50; line-height: 1.4;
+}
+.sr-tooltip:hover .sr-tooltip-content,
+.sr-tooltip:focus .sr-tooltip-content { visibility: visible; opacity: 1; }
+.sr-tooltip-content a { color: #93c5fd; }

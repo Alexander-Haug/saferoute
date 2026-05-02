@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}SafeRoute · Aplicativo{% endblock %}
+{% block body_class %}sr-page-app{% endblock %}
+
+{% block head_extra %}
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="sr-app-shell">
+
+  {# ───────── Mapa fullscreen ───────── #}
+  <div class="sr-map-stage" id="mapStage">
+    <div id="map" class="sr-map"></div>
+
+    {# Cards de filtro flutuantes (Tarefa 2.4) #}
+    <div class="sr-cat-cards" id="catCards">
+      <button class="sr-chip is-active" data-filter="all">📊 Tudo</button>
+      <button class="sr-chip" data-filter="roubos_furtos">🚨 Roubos/Furtos</button>
+      <button class="sr-chip" data-filter="homicidios">⚠️ Homicídios</button>
+      <button class="sr-chip" data-filter="violencia">👊 Violência</button>
+      <button class="sr-chip sr-chip-clear" id="clearFilter">✖️ Limpar</button>
+    </div>
+
+    {# Legenda do heatmap #}
+    <div class="sr-legend" aria-hidden="true">
+      <span class="sr-legend-grad"></span>
+      <span class="sr-legend-lo">Seguro</span>
+      <span class="sr-legend-hi">Perigoso</span>
+    </div>
+  </div>
+
+  {# ───────── Bottom sheet arrastável ───────── #}
+  <aside class="sr-sheet" id="sheet" data-state="peek">
+    <button class="sr-sheet-grabber" id="sheetGrabber" aria-label="Expandir formulário">
+      <span></span>
+    </button>
+
+    <header class="sr-sheet-header">
+      <div>
+        <h2>Planeje sua rota</h2>
+        <p class="sr-muted">
+          Score baseado em
+          <strong>{{ metadata.registros }}</strong> ocorrências ·
+          atualizado em {{ metadata.ultima_atualizacao }}
+        </p>
+      </div>
+    </header>
+
+    {% if erro_compartilhamento %}
+      <div class="sr-toast sr-toast-error">{{ erro_compartilhamento }}</div>
+    {% endif %}
+
+    <form id="routeForm" action="{{ url_for('resultado_rota') }}" method="get" class="sr-form">
+
+      <label class="sr-field">
+        <span>Origem</span>
+        <div class="sr-input-group">
+          <input name="origem" id="origemInput" required
+                 placeholder="Ex.: Av. Paulista, 1000" autocomplete="off">
+          <button type="button" class="sr-iconbtn" id="geoBtn" title="Usar minha localização">📍</button>
+        </div>
+      </label>
+
+      <label class="sr-field">
+        <span>Destino</span>
+        <input name="destino" id="destinoInput" required
+               placeholder="Ex.: Rua Augusta, 500" autocomplete="off">
+      </label>
+
+      {# Tarefa 2.2 — agora vs depois #}
+      <fieldset class="sr-field sr-segmented">
+        <legend>Quando</legend>
+        <div class="sr-seg-options">
+          <label><input type="radio" name="quando" value="agora" checked><span>🕐 Agora</span></label>
+          <label><input type="radio" name="quando" value="depois"><span>📅 Depois</span></label>
+        </div>
+        <input type="datetime-local" name="horario" id="horarioInput"
+               value="{{ agora }}" class="sr-datetime">
+      </fieldset>
+
+      {# Tarefa 2.3 — modo de transporte como pills #}
+      <fieldset class="sr-field sr-pillselect">
+        <legend>Como você vai</legend>
+        <div class="sr-pillgroup" id="modoGroup">
+          <input type="radio" id="m_ape" name="modo" value="ape" checked>
+          <label for="m_ape">🚶 A pé</label>
+          <input type="radio" id="m_bici" name="modo" value="bicicleta">
+          <label for="m_bici">🚴 Bicicleta</label>
+          <input type="radio" id="m_carro" name="modo" value="carro">
+          <label for="m_carro">🚗 Carro</label>
+          <input type="radio" id="m_tp" name="modo" value="transporte_publico">
+          <label for="m_tp">🚌 Transporte</label>
+        </div>
+      </fieldset>
+
+      <fieldset class="sr-field sr-pillselect">
+        <legend>Prioridade</legend>
+        <div class="sr-pillgroup">
+          <input type="radio" id="p_seg" name="prioridade" value="segura">
+          <label for="p_seg">🛡️ Segura</label>
+          <input type="radio" id="p_eq" name="prioridade" value="equilibrada" checked>
+          <label for="p_eq">⚖️ Equilibrada</label>
+          <input type="radio" id="p_rap" name="prioridade" value="rapida">
+          <label for="p_rap">⚡ Rápida</label>
+        </div>
+      </fieldset>
+
+      <button type="submit" class="sr-btn sr-btn-primary sr-btn-pill sr-btn-block sr-btn-large">
+        Calcular rotas seguras
+      </button>
+    </form>
+
+    {# Tarefa 4.4 — favoritas (lê do server se logado, senão localStorage) #}
+    <section class="sr-fav-section">
+      <header class="sr-fav-header">
+        <h3>⭐ Favoritas</h3>
+        {% if not (current_user and current_user.is_authenticated) %}
+          <a href="{{ url_for('auth.login') }}" class="sr-link">Faça login para sincronizar</a>
+        {% endif %}
+      </header>
+      <ul id="favList" class="sr-fav-list">
+        <li class="sr-muted">Nenhuma rota salva ainda.</li>
+      </ul>
+    </section>
+
+    <details class="sr-method">
+      <summary>ℹ️ Sobre a metodologia</summary>
+      <p>{{ metadata.metodologia }}</p>
+      <p>Fonte: {{ metadata.fonte }} · Atualização: {{ metadata.ultima_atualizacao }}.</p>
+    </details>
+  </aside>
+</div>
+
+{# Floating action button (mobile): abre/fecha o sheet #}
+<button class="sr-fab" id="fabSheet" aria-label="Abrir formulário">
+  <span>🔍</span>
+</button>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/mapa.js') }}"></script>
+<script src="{{ url_for('static', filename='js/filtros.js') }}"></script>
+<script src="{{ url_for('static', filename='js/geolocation.js') }}"></script>
+<script src="{{ url_for('static', filename='js/favoritas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/bottom_sheet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Entrar · SafeRoute{% endblock %}
+{% block body_class %}sr-page-auth{% endblock %}
+
+{% block content %}
+<section class="sr-auth-shell">
+  <div class="sr-auth-card">
+    <div class="sr-auth-icon">📍</div>
+    <h1>Bem-vindo de volta</h1>
+    <p class="sr-muted">Entre para sincronizar suas rotas favoritas.</p>
+
+    <form method="post" class="sr-form sr-form-auth">
+      <label class="sr-field">
+        <span>E-mail</span>
+        <input type="email" name="email" required autocomplete="email"
+               value="{{ email or '' }}" placeholder="voce@exemplo.com">
+      </label>
+      <label class="sr-field">
+        <span>Senha</span>
+        <input type="password" name="senha" required autocomplete="current-password"
+               minlength="8" placeholder="••••••••">
+      </label>
+      <label class="sr-checkbox">
+        <input type="checkbox" name="lembrar"> Lembrar-me neste dispositivo
+      </label>
+
+      <button type="submit" class="sr-btn sr-btn-primary sr-btn-pill sr-btn-block sr-btn-large">
+        Entrar
+      </button>
+    </form>
+
+    <p class="sr-auth-foot">
+      Ainda não tem conta?
+      <a href="{{ url_for('auth.registro') }}">Cadastre-se grátis</a>
+    </p>
+  </div>
+</section>
+{% endblock %}

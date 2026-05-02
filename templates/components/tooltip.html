@@ -1,0 +1,12 @@
+{# Macro de tooltip — Tarefa 2.5 #}
+{% macro tooltip(texto, link=None) %}
+<span class="sr-tooltip" tabindex="0" role="button" aria-label="Mais informações">
+  <span class="sr-tooltip-icon" aria-hidden="true">ℹ️</span>
+  <span class="sr-tooltip-content">
+    {{ texto }}
+    {% if link %}
+      <a href="{{ link }}" target="_blank" rel="noopener">Saiba mais</a>
+    {% endif %}
+  </span>
+</span>
+{% endmacro %}

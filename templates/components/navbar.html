@@ -1,0 +1,12 @@
+{# Navbar comum a todas as páginas #}
+<nav class="sr-navbar">
+  <a href="{{ url_for('landing') }}" class="sr-brand">
+    <img src="{{ url_for('static', filename='logo.png') }}" alt="SafeRoute" onerror="this.style.display='none'">
+    <span>SafeRoute</span>
+  </a>
+  <ul class="sr-menu">
+    <li><a href="{{ url_for('landing') }}">Início</a></li>
+    <li><a href="{{ url_for('mapa') }}">Aplicativo</a></li>
+    <li><a href="{{ url_for('historico') }}">Histórico</a></li>
+  </ul>
+</nav>

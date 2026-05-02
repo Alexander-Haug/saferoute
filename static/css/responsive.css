@@ -1,0 +1,93 @@
+/* ============================================================
+   responsive.css — mobile-first overrides + desktop layout
+   ============================================================ */
+
+/* ---------- Desktop: lateral fixa em vez de bottom sheet ---------- */
+@media (min-width: 900px) {
+  .sr-app-shell {
+    grid-template-columns: 1fr 420px;
+  }
+  .sr-app-shell-result {
+    grid-template-columns: 420px 1fr;
+  }
+  .sr-app-shell-result .sr-map-stage { order: 2; }
+  .sr-app-shell-result .sr-sheet { order: 1; border-right: 1px solid var(--border); border-top: 0; }
+
+  .sr-sheet {
+    border-top: 0; border-left: 1px solid var(--border);
+    height: calc(100vh - 56px - 72px);
+    padding: 24px 24px 32px;
+  }
+  .sr-sheet-grabber { display: none; }
+  .sr-fab { display: none !important; }
+
+  .sr-pillgroup label { flex: 1 1 calc(33% - 6px); }
+}
+
+/* ---------- Tablet ---------- */
+@media (min-width: 600px) and (max-width: 899px) {
+  .sr-features { grid-template-columns: repeat(3, 1fr); }
+  .sr-numbers-band { grid-template-columns: repeat(4, 1fr); }
+  .sr-profile-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---------- Mobile (< 900px): bottom sheet + fab ---------- */
+@media (max-width: 899px) {
+  .sr-app-shell {
+    grid-template-rows: 1fr auto;
+    height: calc(100vh - 56px - 72px);
+  }
+  .sr-map-stage { height: 100%; min-height: 320px; }
+
+  .sr-sheet {
+    position: fixed; left: 0; right: 0; bottom: 72px;
+    max-height: 88vh;
+    border-top-left-radius: 24px; border-top-right-radius: 24px;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(calc(100% - 84px));
+    transition: transform .3s cubic-bezier(.32, .72, 0, 1);
+    z-index: 50;
+  }
+  .sr-sheet[data-state="open"] { transform: translateY(0); }
+  .sr-sheet[data-state="peek"] { transform: translateY(calc(100% - 84px)); }
+  .sr-sheet[data-state="dragging"] { transition: none; }
+  .sr-sheet-grabber { display: block; }
+
+  .sr-fab { display: inline-flex; align-items: center; justify-content: center; }
+  .sr-sheet[data-state="open"] ~ .sr-fab { display: none; }
+
+  /* ajustar bottom dos controles do mapa */
+  .mapboxgl-ctrl-bottom-right,
+  .mapboxgl-ctrl-bottom-left { bottom: 88px !important; }
+  .sr-legend { bottom: 96px; }
+}
+
+/* ---------- Mobile pequeno (< 600px) ---------- */
+@media (max-width: 599px) {
+  h1 { font-size: 1.5rem; }
+  .sr-features { grid-template-columns: 1fr; }
+  .sr-numbers-band { grid-template-columns: repeat(2, 1fr); padding: 18px; }
+  .sr-numbers-band strong { font-size: 1.3rem; }
+
+  .sr-profile-grid { grid-template-columns: 1fr; }
+  .sr-profile-hero { flex-wrap: wrap; }
+  .sr-profile-hero > a { margin-left: 0; width: 100%; }
+
+  .sr-route-stats { font-size: .82rem; gap: 10px; }
+  .sr-result-actions-row { flex-direction: column; }
+  .sr-result-actions-row .sr-btn { flex: none; }
+
+  .sr-cat-cards { top: 8px; left: 8px; right: 8px; }
+  .sr-chip { padding: 7px 12px; font-size: .78rem; }
+
+  .sr-kpi-grid { grid-template-columns: 1fr; }
+  .sr-admin-cols { grid-template-columns: 1fr; }
+}
+
+/* ---------- Reduce motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

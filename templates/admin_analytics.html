@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Analytics · SafeRoute{% endblock %}
+
+{% block content %}
+<section class="sr-page-shell">
+  <header>
+    <h1>📊 Analytics SafeRoute</h1>
+    <p class="sr-muted">Telemetria anônima das últimas buscas. Dados expiram em 30 dias.</p>
+  </header>
+
+  <section class="sr-kpi-grid">
+    <div class="sr-kpi"><strong>{{ data.total }}</strong><span>buscas registradas</span></div>
+    <div class="sr-kpi"><strong>{{ data.taxa_erro_pct }}%</strong><span>taxa de erro</span></div>
+    <div class="sr-kpi"><strong>{{ data.tempo_medio_ms }} ms</strong><span>tempo médio</span></div>
+  </section>
+
+  <section class="sr-admin-cols">
+    <article class="sr-card">
+      <h2>Top 10 destinos (por bairro)</h2>
+      {% if data.top_bairros %}
+        <ol class="sr-bar-list">
+          {% set max_n = data.top_bairros[0].n %}
+          {% for item in data.top_bairros %}
+            <li>
+              <span class="sr-bar-label">{{ item.bairro }}</span>
+              <span class="sr-bar-track">
+                <span class="sr-bar-fill" style="width: {{ (item.n / max_n * 100)|round(1) }}%"></span>
+              </span>
+              <span class="sr-bar-num">{{ item.n }}</span>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}<p class="sr-muted">Sem dados ainda.</p>{% endif %}
+    </article>
+
+    <article class="sr-card">
+      <h2>Buscas por modo</h2>
+      {% if data.por_modo %}
+        <ul class="sr-mode-list">
+          {% for item in data.por_modo %}
+            <li><span>{{ item.modo }}</span><strong>{{ item.n }}</strong></li>
+          {% endfor %}
+        </ul>
+      {% else %}<p class="sr-muted">Sem dados ainda.</p>{% endif %}
+    </article>
+  </section>
+</section>
+{% endblock %}
