@@ -1,11 +1,13 @@
 """
-SafeRouteFacade — orquestra DataLoader, Geocoding e cache.
+SafeRouteFacade — orquestra geocoding (Mapbox + Nominatim fallback),
+roteamento real (Mapbox Directions com alternatives) e scoring de risco.
 
-Padrão Façade: esconde detalhes do scoring, geocoding e cálculo de rotas
-expondo uma API simples ao controller.
+# v2.1 — Bugs 1, 3, 4: rotas reais via Mapbox Directions, geocoding com
+# proximity SP e country=BR, scoring por trajeto sampling.
 """
 from __future__ import annotations
 import math
+import os
 import secrets
 import time
 from typing import Optional
@@ -16,8 +18,19 @@ from models.data_loader import DataLoader
 from models.geocoding_cache import GeocodeCache
 
 
-# Storage simples in-memory de rotas compartilhadas — Tarefa 2.6
 _SHARED_ROUTES: dict[str, dict] = {}
+
+# Centro de São Paulo — usado como proximity hint pra geocoding
+SP_CENTER = (-46.6333, -23.5505)  # (lon, lat)
+
+# Mapeamento modo → profile da Mapbox Directions API
+MODO_PROFILE = {
+    "ape": "walking",
+    "a_pe": "walking",
+    "bicicleta": "cycling",
+    "carro": "driving",
+    "transporte_publico": "driving-traffic",  # melhor proxy disponível
+}
 
 
 def _haversine_km(lat1, lon1, lat2, lon2) -> float:
@@ -29,23 +42,65 @@ def _haversine_km(lat1, lon1, lat2, lon2) -> float:
     return 2 * R * math.asin(math.sqrt(a))
 
 
+def _mapbox_token() -> str:
+    return os.environ.get("MAPBOX_TOKEN", "")
+
+
 class SafeRouteFacade:
     def __init__(self):
         self.loader = DataLoader.instance()
         self.cache = GeocodeCache.instance()
 
-    # ---------------- Geocoding (Nominatim + cache) — Tarefa 4.5
+    # ──────────────────────────────────────────────────────────────────
+    # GEOCODING — Bug 1
+    # Mapbox Geocoding API com proximity em SP + country=BR.
+    # Fallback pro Nominatim (sem custo) caso o token Mapbox falte ou falhe.
+    # ──────────────────────────────────────────────────────────────────
     def geocode(self, endereco: str) -> Optional[tuple[float, float]]:
-        if not endereco:
+        if not endereco or len(endereco.strip()) < 4:
             return None
+
         cached = self.cache.get(endereco)
         if cached:
             return cached
+
+        token = _mapbox_token()
+        if token:
+            try:
+                # Endereço URL-encoded; Mapbox aceita slashes ok
+                from urllib.parse import quote
+                q = quote(endereco.strip(), safe="")
+                url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{q}.json"
+                resp = requests.get(url, params={
+                    "access_token": token,
+                    "country": "BR",
+                    "proximity": f"{SP_CENTER[0]},{SP_CENTER[1]}",
+                    "limit": 1,
+                    "language": "pt",
+                    # Restringe à bbox do município de São Paulo (W,S,E,N)
+                    "bbox": "-46.83,-24.01,-46.36,-23.36",
+                }, timeout=8)
+                if resp.ok:
+                    feats = resp.json().get("features", [])
+                    if feats:
+                        lon, lat = feats[0]["center"]
+                        self.cache.set(endereco, lat, lon)
+                        return (lat, lon)
+            except Exception:
+                pass  # cai pro fallback
+
+        # Fallback Nominatim (mais lento, sem proximity tão preciso)
         try:
             resp = requests.get(
                 "https://nominatim.openstreetmap.org/search",
-                params={"q": f"{endereco}, São Paulo, Brasil", "format": "json", "limit": 1},
-                headers={"User-Agent": "SafeRoute-PUC-SP/2.0"},
+                params={
+                    "q": f"{endereco}, São Paulo, SP, Brasil",
+                    "format": "json", "limit": 1,
+                    "countrycodes": "br",
+                    "viewbox": "-46.83,-23.36,-46.36,-24.01",
+                    "bounded": 1,
+                },
+                headers={"User-Agent": "SafeRoute-PUC-SP/2.1"},
                 timeout=8,
             )
             if resp.ok and resp.json():
@@ -58,12 +113,26 @@ class SafeRouteFacade:
         return None
 
     def reverse_geocode(self, lat: float, lon: float) -> str:
+        token = _mapbox_token()
+        if token:
+            try:
+                resp = requests.get(
+                    f"https://api.mapbox.com/geocoding/v5/mapbox.places/{lon},{lat}.json",
+                    params={"access_token": token, "language": "pt", "limit": 1},
+                    timeout=6,
+                )
+                if resp.ok:
+                    feats = resp.json().get("features", [])
+                    if feats:
+                        return feats[0].get("place_name", f"{lat:.5f}, {lon:.5f}")
+            except Exception:
+                pass
         try:
             resp = requests.get(
                 "https://nominatim.openstreetmap.org/reverse",
                 params={"lat": lat, "lon": lon, "format": "json"},
-                headers={"User-Agent": "SafeRoute-PUC-SP/2.0"},
-                timeout=8,
+                headers={"User-Agent": "SafeRoute-PUC-SP/2.1"},
+                timeout=6,
             )
             if resp.ok:
                 return resp.json().get("display_name", f"{lat:.5f}, {lon:.5f}")
@@ -71,20 +140,90 @@ class SafeRouteFacade:
             pass
         return f"{lat:.5f}, {lon:.5f}"
 
-    # ---------------- Scoring delegado ao DataLoader
+    # ──────────────────────────────────────────────────────────────────
+    # SCORING
+    # ──────────────────────────────────────────────────────────────────
     def calcular_risco(self, via_id: str, hora: int = 12, modo: str = "ape") -> float:
         return self.loader.calcular_risco(via_id, hora, modo)
 
     def get_trend(self, bairro: str):
         return self.loader.get_trend(bairro)
 
-    # ---------------- Rotas (3 alternativas) — Tarefa 1.2
+    def _score_trajeto(self, coords_lonlat: list[list[float]], hora: int, modo: str) -> tuple[float, str]:
+        """Sample N pontos ao longo da rota e retorna (score_medio, bairro_pior)."""
+        if not coords_lonlat:
+            return 5.0, "Sé"
+        n = min(12, max(3, len(coords_lonlat) // 20))
+        step = max(1, len(coords_lonlat) // n)
+        amostras = coords_lonlat[::step]
+        scores = []
+        bairros_count = {}
+        bairro_pior, score_pior = "Sé", -1.0
+        for lon, lat in amostras:
+            bairro = self._nearest_bairro(lat, lon)
+            s = self.calcular_risco(bairro, hora, modo)
+            scores.append(s)
+            bairros_count[bairro] = bairros_count.get(bairro, 0) + 1
+            if s > score_pior:
+                score_pior, bairro_pior = s, bairro
+        media = sum(scores) / len(scores) if scores else 5.0
+        return round(media, 2), bairro_pior
+
+    # ──────────────────────────────────────────────────────────────────
+    # ROTAS — Bugs 3, 4: Mapbox Directions com alternatives
+    # ──────────────────────────────────────────────────────────────────
+    def _mapbox_directions(self, o: tuple[float, float], d: tuple[float, float],
+                           profile: str) -> list[dict]:
+        """Retorna lista de rotas reais (até 3) da Mapbox Directions.
+        Cada rota: {"distance": m, "duration": s, "geometry": {...GeoJSON LineString}}.
+        """
+        token = _mapbox_token()
+        if not token:
+            return []
+        # coordenadas no formato lon,lat;lon,lat
+        coords = f"{o[1]},{o[0]};{d[1]},{d[0]}"
+        url = f"https://api.mapbox.com/directions/v5/mapbox/{profile}/{coords}"
+        try:
+            resp = requests.get(url, params={
+                "access_token": token,
+                "alternatives": "true",
+                "geometries": "geojson",
+                "overview": "full",
+                "language": "pt",
+            }, timeout=10)
+            if resp.ok:
+                return resp.json().get("routes", [])
+        except Exception:
+            return []
+        return []
+
     def get_route_details(self, origem: str, destino: str, horario_iso: str,
                           prioridade: str = "equilibrada", modo: str = "ape") -> dict:
+        # Validação prévia (Bug 5)
+        if not origem or len(origem.strip()) < 4:
+            return {"erro": "Origem inválida — informe um endereço com pelo menos 4 caracteres.",
+                    "campo_erro": "origem", "rotas": []}
+        if not destino or len(destino.strip()) < 4:
+            return {"erro": "Destino inválido — informe um endereço com pelo menos 4 caracteres.",
+                    "campo_erro": "destino", "rotas": []}
+
         o = self.geocode(origem)
         d = self.geocode(destino)
-        if not o or not d:
-            return {"erro": "Não foi possível localizar origem ou destino.", "rotas": []}
+        if not o:
+            return {"erro": "Não consegui localizar a ORIGEM. Tente um formato como "
+                            "'Av. Paulista, 1578 - São Paulo, SP'.",
+                    "campo_erro": "origem", "rotas": []}
+        if not d:
+            return {"erro": "Não consegui localizar o DESTINO. Tente um formato como "
+                            "'Rua Augusta, 500 - São Paulo, SP'.",
+                    "campo_erro": "destino", "rotas": []}
+
+        # Sanidade: distância > 80 km dentro de SP é provavelmente bug de geocoding
+        dist_total = _haversine_km(o[0], o[1], d[0], d[1])
+        if dist_total > 80:
+            return {"erro": "Distância suspeita (>80 km). Talvez um dos endereços tenha sido "
+                            "interpretado fora de São Paulo. Tente incluir 'São Paulo, SP'.",
+                    "campo_erro": "ambos", "rotas": []}
 
         try:
             hora = int(horario_iso.split("T")[1].split(":")[0])
@@ -93,44 +232,91 @@ class SafeRouteFacade:
 
         bairro_o = self._nearest_bairro(*o)
         bairro_d = self._nearest_bairro(*d)
+        profile = MODO_PROFILE.get(modo, "walking")
 
-        dist_km = _haversine_km(o[0], o[1], d[0], d[1])
-        velocidade = {"carro": 30, "transporte_publico": 20, "bicicleta": 15, "ape": 5}.get(modo, 15)
-        tempo_min = max(1, round(dist_km / velocidade * 60))
+        # 1) Pega alternativas reais da Mapbox
+        mb_routes = self._mapbox_directions(o, d, profile)
 
-        risco_o = self.calcular_risco(bairro_o, hora, modo)
-        risco_d = self.calcular_risco(bairro_d, hora, modo)
-        risco = (risco_o + risco_d) / 2
+        # 2) Se vieram <3, sintetiza as faltantes via waypoint deslocado
+        if len(mb_routes) < 3:
+            mid_lat = (o[0] + d[0]) / 2
+            mid_lon = (o[1] + d[1]) / 2
+            offsets = [(0.008, -0.008), (-0.008, 0.008)]
+            for off in offsets:
+                if len(mb_routes) >= 3:
+                    break
+                wp = (mid_lat + off[0], mid_lon + off[1])
+                # via lat,lon → lon,lat
+                token = _mapbox_token()
+                if not token:
+                    break
+                coords = f"{o[1]},{o[0]};{wp[1]},{wp[0]};{d[1]},{d[0]}"
+                url = f"https://api.mapbox.com/directions/v5/mapbox/{profile}/{coords}"
+                try:
+                    r = requests.get(url, params={
+                        "access_token": token,
+                        "geometries": "geojson",
+                        "overview": "full",
+                    }, timeout=8)
+                    if r.ok:
+                        rs = r.json().get("routes", [])
+                        if rs:
+                            mb_routes.append(rs[0])
+                except Exception:
+                    pass
 
-        # Geometrias didáticas: 3 variações com offsets sutis no ponto médio
-        def linha(off_lat, off_lon):
-            mid = ((o[0] + d[0]) / 2 + off_lat, (o[1] + d[1]) / 2 + off_lon)
-            return [[o[1], o[0]], [mid[1], mid[0]], [d[1], d[0]]]
+        # 3) Fallback final: linha didática (sem Mapbox/Internet)
+        if not mb_routes:
+            return self._rotas_fallback(o, d, origem, destino, modo, prioridade,
+                                        horario_iso, hora, bairro_o, bairro_d, dist_total)
+
+        # 4) Calcula score por trajeto e ordena
+        enriched = []
+        for r in mb_routes[:3]:
+            coords = r["geometry"]["coordinates"]  # [[lon,lat], ...]
+            score, bairro_pior = self._score_trajeto(coords, hora, modo)
+            enriched.append({
+                "score": score, "bairro_pior": bairro_pior,
+                "distancia_km": round(r["distance"] / 1000, 2),
+                "tempo_min": max(1, round(r["duration"] / 60)),
+                "geometria": coords,  # já lon,lat — formato Mapbox GL
+            })
+
+        # Ordena por score crescente — mais segura primeiro
+        by_score = sorted(enriched, key=lambda x: x["score"])
+        # Ordena por tempo crescente — mais rápida primeiro
+        by_time = sorted(enriched, key=lambda x: x["tempo_min"])
+
+        segura = by_score[0]
+        rapida = by_time[0]
+        # Equilibrada: a que sobra (ou a com tempo médio se as duas coincidem)
+        outras = [r for r in enriched if r is not segura and r is not rapida]
+        equilibrada = outras[0] if outras else by_time[len(by_time) // 2]
 
         rotas = [
             {
                 "id": "A", "label": "Mais segura", "cor": "#10B981",
-                "score_risco": round(max(0.5, risco - 1.5), 2),
-                "distancia_km": round(dist_km * 1.15, 2),
-                "tempo_min": round(tempo_min * 1.2),
-                "resumo": "Evita áreas com mais ocorrências; pode ser mais longa.",
-                "geometria": linha(0.005, -0.005),
+                "score_risco": segura["score"],
+                "distancia_km": segura["distancia_km"],
+                "tempo_min": segura["tempo_min"],
+                "resumo": f"Evita áreas com mais ocorrências (pior trecho: {segura['bairro_pior']}).",
+                "geometria": segura["geometria"],
             },
             {
                 "id": "B", "label": "Equilibrada", "cor": "#3B82F6",
-                "score_risco": round(risco, 2),
-                "distancia_km": round(dist_km * 1.05, 2),
-                "tempo_min": round(tempo_min * 1.05),
+                "score_risco": equilibrada["score"],
+                "distancia_km": equilibrada["distancia_km"],
+                "tempo_min": equilibrada["tempo_min"],
                 "resumo": "Bom compromisso entre segurança e tempo.",
-                "geometria": linha(0.0, 0.0),
+                "geometria": equilibrada["geometria"],
             },
             {
                 "id": "C", "label": "Mais rápida", "cor": "#F97316",
-                "score_risco": round(min(10.0, risco + 1.5), 2),
-                "distancia_km": round(dist_km, 2),
-                "tempo_min": tempo_min,
-                "resumo": "Trajeto direto; pode atravessar áreas sensíveis.",
-                "geometria": linha(-0.005, 0.005),
+                "score_risco": rapida["score"],
+                "distancia_km": rapida["distancia_km"],
+                "tempo_min": rapida["tempo_min"],
+                "resumo": "Trajeto mais direto — pode atravessar áreas sensíveis.",
+                "geometria": rapida["geometria"],
             },
         ]
         recomendada = {"segura": "A", "rapida": "C"}.get(prioridade, "B")
@@ -145,6 +331,47 @@ class SafeRouteFacade:
             "tendencia_destino": {"percentual": trend_pct, "direcao": trend_dir},
         }
 
+    def _rotas_fallback(self, o, d, origem, destino, modo, prioridade, horario_iso,
+                        hora, bairro_o, bairro_d, dist_km):
+        """Fallback didático quando Mapbox Directions não responde."""
+        velocidade = {"carro": 30, "transporte_publico": 20, "bicicleta": 15, "ape": 5}.get(modo, 15)
+        tempo_min = max(1, round(dist_km / velocidade * 60))
+        risco = (self.calcular_risco(bairro_o, hora, modo) +
+                 self.calcular_risco(bairro_d, hora, modo)) / 2
+
+        def linha(off_lat, off_lon):
+            mid = ((o[0] + d[0]) / 2 + off_lat, (o[1] + d[1]) / 2 + off_lon)
+            return [[o[1], o[0]], [mid[1], mid[0]], [d[1], d[0]]]
+
+        rotas = [
+            {"id": "A", "label": "Mais segura", "cor": "#10B981",
+             "score_risco": round(max(0.5, risco - 1.5), 2),
+             "distancia_km": round(dist_km * 1.15, 2), "tempo_min": round(tempo_min * 1.2),
+             "resumo": "⚠️ Modo offline (sem Mapbox Directions). Estimativa aproximada.",
+             "geometria": linha(0.005, -0.005)},
+            {"id": "B", "label": "Equilibrada", "cor": "#3B82F6",
+             "score_risco": round(risco, 2),
+             "distancia_km": round(dist_km * 1.05, 2), "tempo_min": round(tempo_min * 1.05),
+             "resumo": "⚠️ Modo offline. Configure MAPBOX_TOKEN para rotas reais.",
+             "geometria": linha(0, 0)},
+            {"id": "C", "label": "Mais rápida", "cor": "#F97316",
+             "score_risco": round(min(10.0, risco + 1.5), 2),
+             "distancia_km": round(dist_km, 2), "tempo_min": tempo_min,
+             "resumo": "⚠️ Modo offline. Linha reta entre origem e destino.",
+             "geometria": linha(-0.005, 0.005)},
+        ]
+        recomendada = {"segura": "A", "rapida": "C"}.get(prioridade, "B")
+        trend_pct, trend_dir = self.get_trend(bairro_d)
+        return {
+            "erro": None,
+            "origem": {"endereco": origem, "lat": o[0], "lon": o[1], "bairro": bairro_o},
+            "destino": {"endereco": destino, "lat": d[0], "lon": d[1], "bairro": bairro_d},
+            "modo": modo, "horario": horario_iso, "prioridade": prioridade,
+            "recomendada": recomendada, "rotas": rotas,
+            "tendencia_destino": {"percentual": trend_pct, "direcao": trend_dir},
+            "modo_offline": True,
+        }
+
     def _nearest_bairro(self, lat: float, lon: float) -> str:
         best, best_d = None, 1e9
         for bairro, (clat, clon) in self.loader._centroides.items():
@@ -153,11 +380,10 @@ class SafeRouteFacade:
                 best_d, best = d, bairro
         return best or "Sé"
 
-    # ---------------- Mapa GeoJSON com filtros — Tarefa 2.4
+    # ──────────────────────────────────────────────────────────────────
     def get_map_geojson(self, filter_type: str = "all") -> dict:
         return self.loader.geojson(filter_type)
 
-    # ---------------- Compartilhar — Tarefa 2.6
     def compartilhar(self, payload: dict) -> str:
         token = secrets.token_urlsafe(8)
         _SHARED_ROUTES[token] = {"payload": payload, "ts": int(time.time())}

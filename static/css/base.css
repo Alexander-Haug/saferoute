@@ -125,7 +125,7 @@ p  { margin: .25em 0 .75em; }
 /* ---------- Bottom navigation ---------- */
 .sr-bottomnav {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   padding: 6px 6px max(6px, env(safe-area-inset-bottom));
   background: var(--glass); backdrop-filter: saturate(180%) blur(16px);
   -webkit-backdrop-filter: saturate(180%) blur(16px);
@@ -318,15 +318,25 @@ p  { margin: .25em 0 .75em; }
 .sr-field { display: flex; flex-direction: column; gap: 6px; font-size: .9rem; }
 .sr-field > span,
 .sr-field > legend { color: var(--text-mute); font-weight: 600; padding: 0; }
-.sr-field input, .sr-field select, .sr-datetime, .sr-form-auth input {
+.sr-field input, .sr-field select, .sr-field textarea,
+.sr-datetime, .sr-form-auth input {
   font: inherit; padding: 12px 14px; border: 1px solid var(--border);
   border-radius: 12px; background: var(--bg); color: var(--text);
   width: 100%; min-height: 44px;
   transition: border-color .15s ease, box-shadow .15s ease;
 }
-.sr-field input:focus, .sr-field select:focus, .sr-datetime:focus {
+.sr-field textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+.sr-field input:focus, .sr-field select:focus,
+.sr-field textarea:focus, .sr-datetime:focus {
   outline: none; border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(59,130,246,.2);
+}
+
+.sr-report-header {
+  display: flex; align-items: flex-start; gap: 16px;
+  padding: 20px; background: linear-gradient(135deg, rgba(239,68,68,.1), transparent);
+  border: 1px solid var(--border); border-left: 4px solid var(--danger);
+  border-radius: 18px; margin-bottom: 16px;
 }
 .sr-input-group { display: flex; gap: 8px; align-items: stretch; }
 .sr-input-group input { flex: 1; }
@@ -346,21 +356,39 @@ p  { margin: .25em 0 .75em; }
 .sr-seg-options label:has(input:checked) { background: var(--bg-elev); box-shadow: var(--shadow-sm); }
 .sr-datetime { margin-top: 8px; }
 
-/* Pill select (modo, prioridade) */
+/* Pill select (modo, prioridade) — label-wrap pattern */
 .sr-pillselect { padding: 0; border: 0; }
 .sr-pillgroup {
   display: flex; flex-wrap: wrap; gap: 6px;
   padding: 4px; background: var(--bg-soft); border-radius: 14px;
 }
-.sr-pillgroup input { position: absolute; opacity: 0; pointer-events: none; }
-.sr-pillgroup label {
-  flex: 1 1 calc(50% - 6px); text-align: center;
-  padding: 10px 12px; border-radius: 10px; cursor: pointer;
-  font-size: .88rem; font-weight: 600; color: var(--text-mute);
+.sr-pill {
+  flex: 1 1 calc(50% - 6px); position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  text-align: center; cursor: pointer;
+  border-radius: 10px;
   transition: background-color .15s ease, color .15s ease;
 }
-.sr-pillgroup input:checked + label {
+.sr-pill input {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; margin: 0;
+}
+.sr-pill span {
+  display: block; width: 100%; padding: 10px 12px;
+  font-size: .88rem; font-weight: 600; color: var(--text-mute);
+  border-radius: 10px;
+  transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.sr-pill:has(input:checked) span,
+.sr-pill input:checked + span {
   background: var(--bg-elev); color: var(--text); box-shadow: var(--shadow-sm);
+}
+
+/* Bug 9: Checkbox padronizado */
+input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: var(--primary);
+  cursor: pointer; border-radius: 4px;
+  vertical-align: -3px; margin-right: 4px;
 }
 
 .sr-checkbox {
@@ -398,10 +426,13 @@ p  { margin: .25em 0 .75em; }
 
 /* ---------- Erro ---------- */
 .sr-error-block {
-  max-width: 420px; margin: 80px auto; text-align: center; padding: 32px 20px;
+  max-width: 480px; margin: 80px auto; text-align: center; padding: 32px 20px;
   background: var(--bg-elev); border-radius: 24px; border: 1px solid var(--border);
 }
 .sr-error-emoji { font-size: 3rem; }
+.sr-error-actions {
+  display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px;
+}
 
 /* ---------- Auth ---------- */
 .sr-auth-shell {

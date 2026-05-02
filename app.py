@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 from controllers.routes import api_bp, register_pages
 from controllers.admin import admin_bp
 from controllers.auth import auth_bp
+from controllers.reports import reports_bp
 from models.db import db, User, init_db
 from models.data_loader import DataLoader
 from models.geocoding_cache import GeocodeCache
@@ -60,7 +61,8 @@ def create_app() -> Flask:
     register_pages(app)
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(admin_bp, url_prefix="/admin")
-    app.register_blueprint(auth_bp)  # /login, /registro, /perfil, /api/favoritas
+    app.register_blueprint(auth_bp)      # /login, /registro, /perfil, /api/favoritas
+    app.register_blueprint(reports_bp)   # /reportar, /api/reportes
 
     # Variáveis disponíveis em todos os templates (footer, mapbox token, etc)
     @app.context_processor

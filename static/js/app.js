@@ -48,7 +48,23 @@
     }
   } catch {}
 
-  form.addEventListener('submit', () => {
+  form.addEventListener('submit', (ev) => {
+    // Bug 5: validação prévia
+    const o = form.origem.value.trim();
+    const d = form.destino.value.trim();
+    if (o.length < 5) {
+      ev.preventDefault();
+      window.SafeRoute.toast('Origem precisa ter pelo menos 5 caracteres.', 'error');
+      form.origem.focus();
+      return;
+    }
+    if (d.length < 5) {
+      ev.preventDefault();
+      window.SafeRoute.toast('Destino precisa ter pelo menos 5 caracteres.', 'error');
+      form.destino.focus();
+      return;
+    }
+
     const prefs = {
       modo: form.modo.value, prioridade: form.prioridade.value,
     };

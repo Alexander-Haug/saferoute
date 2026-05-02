@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Reportar ocorrência · SafeRoute{% endblock %}
+
+{% block content %}
+<section class="sr-page-shell">
+
+  <header class="sr-report-header">
+    <div>
+      <h1>🚨 Reportar ocorrência</h1>
+      <p class="sr-muted">
+        Ajude a comunidade compartilhando o que você presenciou ou sentiu.
+        Reportes passam por moderação antes de virar dado público.
+      </p>
+    </div>
+  </header>
+
+  <article class="sr-card">
+    <form method="post" class="sr-form" id="reportForm">
+
+      <fieldset class="sr-field sr-pillselect">
+        <legend>Tipo de ocorrência</legend>
+        <div class="sr-pillgroup">
+          {% for slug, label in tipos.items() %}
+            <label class="sr-pill">
+              <input type="radio" name="tipo" value="{{ slug }}" {% if loop.first %}checked{% endif %}>
+              <span>{{ label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+
+      <label class="sr-field">
+        <span>Endereço / referência</span>
+        <div class="sr-input-group">
+          <input type="text" name="endereco" id="enderecoInput" required
+                 minlength="5" placeholder="Ex.: Rua Augusta, 500 - Consolação">
+          <button type="button" class="sr-iconbtn" id="reportGeoBtn"
+                  title="Usar minha localização">📍</button>
+        </div>
+        <input type="hidden" name="lat" id="latInput">
+        <input type="hidden" name="lon" id="lonInput">
+      </label>
+
+      <label class="sr-field">
+        <span>Quando aconteceu (opcional)</span>
+        <input type="datetime-local" name="quando">
+      </label>
+
+      <label class="sr-field">
+        <span>Descrição</span>
+        <textarea name="descricao" rows="4"
+                  placeholder="Conte com suas palavras o que aconteceu, o que viu, ou por que se sentiu inseguro."></textarea>
+      </label>
+
+      <button type="submit" class="sr-btn sr-btn-primary sr-btn-pill sr-btn-block sr-btn-large">
+        Enviar reporte
+      </button>
+    </form>
+  </article>
+
+  {% if meus %}
+    <article class="sr-card sr-card-wide">
+      <h2>📋 Meus últimos reportes</h2>
+      <ul class="sr-fav-list">
+        {% for r in meus %}
+          <li class="sr-fav-row" data-id="{{ r.id }}">
+            <div style="flex:1">
+              <strong>{{ tipos.get(r.tipo, r.tipo) }}</strong>
+              <span class="sr-mini sr-muted">
+                {{ r.endereco }} ·
+                {% if r.moderado %}<span style="color:var(--safe)">✅ aprovado</span>
+                {% else %}<span style="color:var(--warn)">⏳ em moderação</span>{% endif %}
+                · {{ r.criado_em[:16]|replace('T',' ') }}
+              </span>
+            </div>
+            <button class="sr-iconbtn" data-action="del-report" data-id="{{ r.id }}"
+                    aria-label="Remover">🗑️</button>
+          </li>
+        {% endfor %}
+      </ul>
+    </article>
+  {% endif %}
+
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Geolocalização: preenche endereço + lat/lon escondidos
+  document.getElementById('reportGeoBtn')?.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      window.SafeRoute.toast('Geolocalização não disponível.', 'error');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const { latitude, longitude } = pos.coords;
+      document.getElementById('latInput').value = latitude;
+      document.getElementById('lonInput').value = longitude;
+      try {
+        const r = await fetch(`/api/reverse-geocode?lat=${latitude}&lon=${longitude}`);
+        const j = await r.json();
+        document.getElementById('enderecoInput').value = j.endereco || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+        window.SafeRoute.toast('📍 Localização preenchida');
+      } catch {
+        document.getElementById('enderecoInput').value = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+      }
+    }, () => window.SafeRoute.toast('Permissão de localização negada.', 'error'));
+  });
+
+  // Apagar reporte
+  document.querySelectorAll('[data-action="del-report"]').forEach(b => {
+    b.addEventListener('click', async () => {
+      if (!confirm('Apagar este reporte?')) return;
+      const r = await fetch(`/api/reportes/${b.dataset.id}`, { method: 'DELETE' });
+      if (r.ok) b.closest('li').remove();
+    });
+  });
+</script>
+{% endblock %}

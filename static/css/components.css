@@ -25,6 +25,13 @@
 }
 .mapboxgl-popup-tip { display: none !important; }
 
+/* Popup de ocorrência (Bug 8) */
+.sr-popup { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; line-height: 1.35; }
+.sr-popup-title { font-size: .98rem; color: var(--text); }
+.sr-popup-row { color: var(--text); }
+.sr-popup-mute { color: var(--text-mute); font-size: .78rem; margin-top: 4px;
+                 padding-top: 4px; border-top: 1px solid var(--border); }
+
 /* Tooltip simples */
 .sr-tooltip { position: relative; display: inline-block; cursor: help; }
 .sr-tooltip-content {

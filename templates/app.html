@@ -79,30 +79,23 @@
                value="{{ agora }}" class="sr-datetime">
       </fieldset>
 
-      {# Tarefa 2.3 — modo de transporte como pills #}
+      {# Tarefa 2.3 — modo de transporte como pills (Bug 2/10: label-wrap) #}
       <fieldset class="sr-field sr-pillselect">
         <legend>Como você vai</legend>
         <div class="sr-pillgroup" id="modoGroup">
-          <input type="radio" id="m_ape" name="modo" value="ape" checked>
-          <label for="m_ape">🚶 A pé</label>
-          <input type="radio" id="m_bici" name="modo" value="bicicleta">
-          <label for="m_bici">🚴 Bicicleta</label>
-          <input type="radio" id="m_carro" name="modo" value="carro">
-          <label for="m_carro">🚗 Carro</label>
-          <input type="radio" id="m_tp" name="modo" value="transporte_publico">
-          <label for="m_tp">🚌 Transporte</label>
+          <label class="sr-pill"><input type="radio" name="modo" value="ape" checked><span>🚶 A pé</span></label>
+          <label class="sr-pill"><input type="radio" name="modo" value="bicicleta"><span>🚴 Bicicleta</span></label>
+          <label class="sr-pill"><input type="radio" name="modo" value="carro"><span>🚗 Carro</span></label>
+          <label class="sr-pill"><input type="radio" name="modo" value="transporte_publico"><span>🚌 Transporte</span></label>
         </div>
       </fieldset>
 
       <fieldset class="sr-field sr-pillselect">
         <legend>Prioridade</legend>
         <div class="sr-pillgroup">
-          <input type="radio" id="p_seg" name="prioridade" value="segura">
-          <label for="p_seg">🛡️ Segura</label>
-          <input type="radio" id="p_eq" name="prioridade" value="equilibrada" checked>
-          <label for="p_eq">⚖️ Equilibrada</label>
-          <input type="radio" id="p_rap" name="prioridade" value="rapida">
-          <label for="p_rap">⚡ Rápida</label>
+          <label class="sr-pill"><input type="radio" name="prioridade" value="segura"><span>🛡️ Segura</span></label>
+          <label class="sr-pill"><input type="radio" name="prioridade" value="equilibrada" checked><span>⚖️ Equilibrada</span></label>
+          <label class="sr-pill"><input type="radio" name="prioridade" value="rapida"><span>⚡ Rápida</span></label>
         </div>
       </fieldset>
 

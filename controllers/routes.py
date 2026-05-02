@@ -35,6 +35,15 @@ def register_pages(app):
         return render_template("app.html",
                                agora=datetime.now(TZ).strftime("%Y-%m-%dT%H:%M"))
 
+    # Bug 7 — redirects de URLs antigas
+    @app.route("/mapa")
+    def mapa_legacy():
+        return redirect(url_for("mapa"), code=301)
+
+    @app.route("/buscar")
+    def buscar_legacy():
+        return redirect(url_for("mapa") + "#search", code=301)
+
     @app.route("/app/rota/resultado")
     def resultado_rota():
         origem = request.args.get("origem", "")

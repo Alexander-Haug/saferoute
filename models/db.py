@@ -99,6 +99,36 @@ class HistoricoBusca(db.Model):
         }
 
 
+class Report(db.Model):
+    """Reporte de ocorrência feito por usuário (Feature 11)."""
+    __tablename__ = "reports"
+
+    id = db.Column(db.String(36), primary_key=True, default=_uuid)
+    user_id = db.Column(db.String(36), db.ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    tipo = db.Column(db.String(40), nullable=False)
+    descricao = db.Column(db.Text)
+    endereco = db.Column(db.Text)
+    lat = db.Column(db.Float)
+    lon = db.Column(db.Float)
+    quando = db.Column(db.DateTime)
+    criado_em = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    moderado = db.Column(db.Boolean, default=False)
+
+    user = db.relationship("User", backref="reports")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "tipo": self.tipo,
+            "descricao": self.descricao,
+            "endereco": self.endereco,
+            "lat": self.lat, "lon": self.lon,
+            "quando": self.quando.isoformat() if self.quando else None,
+            "criado_em": self.criado_em.isoformat() if self.criado_em else None,
+            "moderado": self.moderado,
+        }
+
+
 def init_db(app):
     """Cria as tabelas se não existirem (sem Alembic nesta versão)."""
     with app.app_context():

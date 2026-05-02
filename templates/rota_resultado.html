@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}SafeRoute · 3 rotas calculadas{% endblock %}
+{% block title %}{% if dados.erro %}SafeRoute · Erro ao calcular rota{% else %}SafeRoute · 3 rotas calculadas{% endif %}{% endblock %}
 {% block body_class %}sr-page-result{% endblock %}
 
 {% block head_extra %}
@@ -12,7 +12,16 @@
     <div class="sr-error-emoji">😕</div>
     <h2>Não foi possível calcular a rota</h2>
     <p>{{ dados.erro }}</p>
-    <a href="{{ url_for('mapa') }}" class="sr-btn sr-btn-primary sr-btn-pill">Tentar novamente</a>
+    {% if dados.campo_erro %}
+      <p class="sr-mini sr-muted">
+        Campo problemático: <strong>{{ dados.campo_erro }}</strong>.
+        Dica: inclua bairro e cidade — ex.: <em>"Rua Augusta, 500 - Consolação, São Paulo, SP"</em>.
+      </p>
+    {% endif %}
+    <div class="sr-error-actions">
+      <a href="{{ url_for('mapa') }}" class="sr-btn sr-btn-primary sr-btn-pill">↩️ Refazer busca</a>
+      <a href="{{ url_for('mapa') }}" class="sr-btn sr-btn-ghost sr-btn-pill">🗺️ Marcar no mapa</a>
+    </div>
   </div>
 {% else %}
 

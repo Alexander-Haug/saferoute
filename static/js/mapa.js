@@ -128,13 +128,25 @@ async function loadOccurrences(map, filter) {
     },
   });
 
+  // Bug 8 — popup legível com qtd, faixa de horário e mês/ano
+  const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   map.on('click', 'oc-points', (e) => {
     const f = e.features[0];
-    new mapboxgl.Popup({ closeButton: false })
+    const p = f.properties;
+    const qtdLabel = `${p.qtd} ${p.qtd == 1 ? 'ocorrência registrada' : 'ocorrências registradas'}`;
+    const horaIni = parseInt(p.hora, 10);
+    const horaFim = (horaIni + 1) % 24;
+    const mes = MESES[(parseInt(p.mes, 10) - 1) % 12] || p.mes;
+    new mapboxgl.Popup({ closeButton: false, maxWidth: '260px' })
       .setLngLat(f.geometry.coordinates)
       .setHTML(`
-        <strong>${f.properties.tipo}</strong><br>
-        ${f.properties.bairro} · ${f.properties.qtd}× · ${f.properties.hora}h
+        <div class="sr-popup">
+          <strong class="sr-popup-title">${p.tipo}</strong>
+          <div class="sr-popup-row">📍 ${p.bairro}</div>
+          <div class="sr-popup-row">🔢 ${qtdLabel}</div>
+          <div class="sr-popup-row">🕐 Horário típico: entre ${horaIni}h e ${horaFim}h</div>
+          <div class="sr-popup-row sr-popup-mute">📅 Período: ${mes}/${p.ano}</div>
+        </div>
       `).addTo(map);
   });
   map.on('mouseenter', 'oc-points', () => map.getCanvas().style.cursor = 'pointer');

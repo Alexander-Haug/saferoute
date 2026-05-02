@@ -88,6 +88,11 @@
        class="sr-bn-item {% if request.endpoint == 'historico' %}is-active{% endif %}">
       <span class="sr-bn-icon">⏱️</span><span class="sr-bn-label">Histórico</span>
     </a>
+    {# Feature 11 — Reportar #}
+    <a href="{{ url_for('reports.reportar') }}"
+       class="sr-bn-item {% if request.endpoint == 'reports.reportar' %}is-active{% endif %}">
+      <span class="sr-bn-icon">🚨</span><span class="sr-bn-label">Reportar</span>
+    </a>
     {% if current_user and current_user.is_authenticated %}
       <a href="{{ url_for('auth.perfil') }}"
          class="sr-bn-item {% if request.endpoint == 'auth.perfil' %}is-active{% endif %}">
