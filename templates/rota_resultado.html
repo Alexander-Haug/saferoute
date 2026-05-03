@@ -81,6 +81,9 @@
       <a id="btnNavegar" class="sr-btn sr-btn-primary sr-btn-pill sr-btn-block" target="_blank" rel="noopener">
         🚀 Iniciar navegação
       </a>
+      <button id="btnAoVivo" class="sr-btn sr-btn-success sr-btn-pill sr-btn-block">
+        📡 Acompanhar rota ao vivo
+      </button>
       <div class="sr-result-actions-row">
         <button id="btnFavoritar" class="sr-btn sr-btn-ghost sr-btn-pill">❤️ Favoritar</button>
         <button id="btnCompartilhar" class="sr-btn sr-btn-ghost sr-btn-pill">🔗 Compartilhar</button>
@@ -100,11 +103,12 @@
 <script src="{{ url_for('static', filename='js/compartilhar.js') }}"></script>
 <script src="{{ url_for('static', filename='js/mapa.js') }}"></script>
 <script src="{{ url_for('static', filename='js/bottom_sheet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/rota_ao_vivo.js') }}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     const dados = JSON.parse(document.getElementById('routePayload').textContent);
-    window.SafeRoute.renderResultMap('resultMap', dados);
-    window.SafeRoute.wireResultActions(dados);
+    const mapInstance = window.SafeRoute.renderResultMap('resultMap', dados);
+    window.SafeRoute.wireResultActions(dados, mapInstance);
   });
 </script>
 {% endif %}

@@ -46,14 +46,39 @@ function initMainMap() {
   map.addControl(geolocate, 'top-right');
 
   let currentFilter = 'all';
+  let currentView = 'clusters';   // 'clusters' | 'heatmap'
+  let currentHour = null;          // null = sem filtro de hora; 0-23 = filtra
 
   map.on('load', async () => {
-    // Tira o skeleton só quando o mapa de fato carregou
     document.getElementById('mapSkeleton')?.classList.add('is-hidden');
     setTimeout(() => document.getElementById('mapSkeleton')?.remove(), 400);
     await loadOccurrences(map, currentFilter);
-    // Tenta acionar geolocalização automática (silenciosamente — usuário precisa permitir)
     try { geolocate.trigger(); } catch {}
+
+    // Toggle clusters/heatmap
+    document.querySelectorAll('#viewModeToggle .sr-vm-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#viewModeToggle .sr-vm-btn')
+                .forEach(b => b.classList.toggle('is-active', b === btn));
+        currentView = btn.dataset.view;
+        applyView(map, currentView);
+      });
+    });
+
+    // Slider de hora — filtra ocorrências mostradas no mapa
+    const range = document.getElementById('hourRange');
+    const label = document.getElementById('hourLabel');
+    const reset = document.getElementById('hourReset');
+    range?.addEventListener('input', () => {
+      currentHour = parseInt(range.value, 10);
+      label.textContent = currentHour + 'h';
+      applyHourFilter(map, currentHour);
+    });
+    reset?.addEventListener('click', () => {
+      currentHour = null;
+      range.value = 12; label.textContent = '12h';
+      applyHourFilter(map, null);
+    });
   });
 
   // Re-renderiza ao mudar de tema
@@ -167,6 +192,84 @@ async function loadOccurrences(map, filter) {
       map.easeTo({ center: f.geometry.coordinates, zoom });
     });
   });
+
+  // Hover em cluster → mostra popup com bairros principais
+  let clusterHoverPopup = null;
+  map.on('mouseenter', 'oc-clusters', () => map.getCanvas().style.cursor = 'pointer');
+  map.on('mouseleave', 'oc-clusters', () => {
+    map.getCanvas().style.cursor = '';
+    clusterHoverPopup?.remove(); clusterHoverPopup = null;
+  });
+  map.on('mousemove', 'oc-clusters', (e) => {
+    const f = e.features[0];
+    const cid = f.properties.cluster_id;
+    map.getSource(SRC).getClusterLeaves(cid, 100, 0, (err, leaves) => {
+      if (err || !leaves) return;
+      // agrega por bairro/tipo
+      const bairros = {};
+      let totalQtd = 0;
+      leaves.forEach(l => {
+        const b = l.properties.bairro;
+        bairros[b] = (bairros[b] || 0) + (l.properties.qtd || 1);
+        totalQtd += l.properties.qtd || 1;
+      });
+      const top = Object.entries(bairros).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const html = `
+        <div class="sr-popup">
+          <strong class="sr-popup-title">📍 ${f.properties.point_count_abbreviated} pontos</strong>
+          <div class="sr-popup-row">${totalQtd} ocorrências no total</div>
+          <div class="sr-popup-mute">Bairros principais:</div>
+          ${top.map(([b, n]) => `<div class="sr-popup-row">• ${b}: <strong>${n}</strong></div>`).join('')}
+        </div>`;
+      clusterHoverPopup?.remove();
+      clusterHoverPopup = new mapboxgl.Popup({
+        closeButton: false, closeOnClick: false, maxWidth: '240px', offset: 12,
+      }).setLngLat(f.geometry.coordinates).setHTML(html).addTo(map);
+    });
+  });
+}
+
+// Alterna entre modo clusters (com números) e heatmap puro
+function applyView(map, mode) {
+  const layers = ['oc-clusters', 'oc-cluster-count', 'oc-points'];
+  layers.forEach(l => {
+    if (map.getLayer(l)) {
+      map.setLayoutProperty(l, 'visibility', mode === 'clusters' ? 'visible' : 'none');
+    }
+  });
+  if (map.getLayer('oc-heat')) {
+    // heatmap fica mais opaco quando é o modo principal
+    map.setPaintProperty('oc-heat', 'heatmap-opacity',
+      mode === 'heatmap'
+        ? ['interpolate', ['linear'], ['zoom'], 7, 1, 15, 0.7]
+        : ['interpolate', ['linear'], ['zoom'], 7, 0.85, 15, 0.4]);
+  }
+}
+
+// Filtra pontos visíveis pela hora (slider). null = sem filtro.
+function applyHourFilter(map, hour) {
+  const SRC = 'ocorrencias';
+  if (!map.getLayer('oc-points')) return;
+  if (hour === null || hour === undefined) {
+    map.setFilter('oc-points', ['!', ['has', 'point_count']]);
+    map.setFilter('oc-clusters', ['has', 'point_count']);
+  } else {
+    // Mostra ocorrências com hora dentro de janela ±1
+    const lo = (hour + 23) % 24;
+    const hi = (hour + 1) % 24;
+    const filter = ['all',
+      ['!', ['has', 'point_count']],
+      ['any',
+        ['==', ['get', 'hora'], hour],
+        ['==', ['get', 'hora'], lo],
+        ['==', ['get', 'hora'], hi],
+      ]
+    ];
+    map.setFilter('oc-points', filter);
+    // clusters não suportam filtro pós-cluster facilmente — escondemos
+    map.setLayoutProperty('oc-clusters', 'visibility', 'none');
+    map.setLayoutProperty('oc-cluster-count', 'visibility', 'none');
+  }
 }
 
 /* ---------- Mapa do resultado ---------- */
@@ -231,10 +334,12 @@ window.SafeRoute.renderResultMap = function (containerId, dados) {
       });
     });
   });
+
+  return map;
 };
 
 /* ---------- Wiring de ações da tela de resultado ---------- */
-window.SafeRoute.wireResultActions = function (dados) {
+window.SafeRoute.wireResultActions = function (dados, mapInstance) {
   // Deep link Google Maps
   const nav = document.getElementById('btnNavegar');
   if (nav) {
@@ -264,6 +369,26 @@ window.SafeRoute.wireResultActions = function (dados) {
       });
       localStorage.setItem('saferoute:favoritas', JSON.stringify(fav.slice(0, 10)));
       window.SafeRoute.toast('❤️ Salvo neste navegador');
+    }
+  });
+
+  // Rota ao vivo
+  let liveSession = null;
+  const btnAoVivo = document.getElementById('btnAoVivo');
+  btnAoVivo?.addEventListener('click', () => {
+    if (liveSession) {
+      liveSession.stop(); liveSession = null;
+      btnAoVivo.textContent = '📡 Acompanhar rota ao vivo';
+      btnAoVivo.classList.remove('is-active');
+      window.SafeRoute.toast('Acompanhamento encerrado.');
+      return;
+    }
+    if (!mapInstance) { window.SafeRoute.toast('Mapa não carregado.', 'error'); return; }
+    liveSession = window.SafeRoute.startLiveRoute(mapInstance, dados);
+    if (liveSession) {
+      btnAoVivo.innerHTML = '⏹️ Parar acompanhamento';
+      btnAoVivo.classList.add('is-active');
+      window.SafeRoute.toast('📡 Acompanhamento ao vivo iniciado.');
     }
   });
 

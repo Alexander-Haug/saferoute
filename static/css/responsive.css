@@ -70,8 +70,11 @@
 
   /* Controles do Mapbox sobem pra não ficar atrás do sheet em peek */
   .mapboxgl-ctrl-bottom-right,
-  .mapboxgl-ctrl-bottom-left { bottom: 224px !important; }
-  .sr-legend { bottom: 232px; }
+  .mapboxgl-ctrl-bottom-left { bottom: 280px !important; }
+  .sr-legend { bottom: 288px; }
+  .sr-hourslider { bottom: 232px; left: 8px; right: 8px; padding: 6px 12px; }
+  .sr-hourslider .sr-hs-label { font-size: .72rem; }
+  .sr-viewmode { top: 60px; }
 }
 
 /* ---------- Mobile pequeno (< 600px) ---------- */

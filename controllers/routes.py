@@ -113,6 +113,13 @@ def api_info():
         return jsonify(json.load(f))
 
 
+@api_bp.route("/suggest", methods=["GET"])
+def api_suggest():
+    """Autocomplete de endereços. Usado pelo frontend nos campos origem/destino."""
+    q = request.args.get("q", "")
+    return jsonify(SafeRouteFacade().suggest(q))
+
+
 @api_bp.route("/reverse-geocode", methods=["GET"])
 def api_reverse_geocode():
     try:

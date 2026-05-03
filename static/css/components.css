@@ -25,6 +25,46 @@
 }
 .mapboxgl-popup-tip { display: none !important; }
 
+/* Autocomplete de endereço */
+.sr-ac-wrap { position: relative; flex: 1; }
+.sr-ac-dropdown {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+  z-index: 80; max-height: 280px; overflow-y: auto;
+  background: var(--bg-elev); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: var(--shadow-lg);
+  list-style: none; padding: 4px; margin: 0;
+}
+.sr-ac-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: 8px; cursor: pointer;
+  transition: background-color .12s ease;
+}
+.sr-ac-item:hover, .sr-ac-item.is-active { background: var(--bg-soft); }
+.sr-ac-pin { font-size: .9rem; padding-top: 2px; }
+.sr-ac-label { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.sr-ac-label strong { font-size: .92rem; }
+.sr-ac-label span {
+  font-size: .78rem; color: var(--text-mute);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Pin do usuário em tempo real */
+.sr-livepin { position: relative; width: 24px; height: 24px; }
+.sr-livepin-dot {
+  position: absolute; inset: 4px; border-radius: 50%;
+  background: #3B82F6; border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3); z-index: 2;
+}
+.sr-livepin-pulse {
+  position: absolute; inset: -4px; border-radius: 50%;
+  background: rgba(59,130,246,.4);
+  animation: sr-pulse-ring 1.6s ease-out infinite;
+}
+@keyframes sr-pulse-ring {
+  0%   { transform: scale(.6); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
 /* Popup de ocorrência (Bug 8) */
 .sr-popup { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; line-height: 1.35; }
 .sr-popup-title { font-size: .98rem; color: var(--text); }

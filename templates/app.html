@@ -24,6 +24,19 @@
       <button class="sr-chip sr-chip-clear" id="clearFilter">✖️ Limpar</button>
     </div>
 
+    {# Toggle de visualização: clusters vs heatmap puro #}
+    <div class="sr-viewmode" id="viewModeToggle" role="group" aria-label="Modo de visualização">
+      <button class="sr-vm-btn is-active" data-view="clusters" title="Mostrar números agrupados">⊕ Clusters</button>
+      <button class="sr-vm-btn" data-view="heatmap" title="Mapa de calor contínuo">🔥 Calor</button>
+    </div>
+
+    {# Slider de horário — sensível ao horário (Tarefa 2.2 visualizada) #}
+    <div class="sr-hourslider" id="hourSlider" aria-label="Hora do dia">
+      <span class="sr-hs-label">🕐 Hora: <strong id="hourLabel">12h</strong></span>
+      <input type="range" min="0" max="23" value="12" id="hourRange" aria-label="Hora do dia">
+      <button class="sr-hs-reset" id="hourReset" title="Voltar ao normal">↻</button>
+    </div>
+
     {# Legenda do heatmap #}
     <div class="sr-legend" aria-hidden="true">
       <span class="sr-legend-grad"></span>
@@ -59,7 +72,8 @@
         <span>Origem</span>
         <div class="sr-input-group">
           <input name="origem" id="origemInput" required
-                 placeholder="Ex.: Av. Paulista, 1000" autocomplete="off">
+                 placeholder="Ex.: Av. Paulista, 1000"
+                 data-autocomplete="endereco">
           <button type="button" class="sr-iconbtn sr-iconbtn-accent" id="geoBtn"
                   title="Usar minha posição atual" aria-label="Usar minha posição atual">
             <span aria-hidden="true">📍</span>
@@ -70,7 +84,8 @@
       <label class="sr-field">
         <span>Destino</span>
         <input name="destino" id="destinoInput" required
-               placeholder="Ex.: Rua Augusta, 500" autocomplete="off">
+               placeholder="Ex.: Rua Augusta, 500"
+               data-autocomplete="endereco">
       </label>
 
       {# Tarefa 2.2 — agora vs depois #}
@@ -142,5 +157,6 @@
 <script src="{{ url_for('static', filename='js/geolocation.js') }}"></script>
 <script src="{{ url_for('static', filename='js/favoritas.js') }}"></script>
 <script src="{{ url_for('static', filename='js/bottom_sheet.js') }}"></script>
+<script src="{{ url_for('static', filename='js/autocomplete.js') }}"></script>
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% endblock %}

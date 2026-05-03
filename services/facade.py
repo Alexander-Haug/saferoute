@@ -112,6 +112,42 @@ class SafeRouteFacade:
             return None
         return None
 
+    def suggest(self, query: str, limit: int = 5) -> list[dict]:
+        """Sugestões de endereço pra autocomplete (Mapbox Geocoding com bbox SP).
+        Retorna [{label, lat, lon, bairro?}, ...]."""
+        q = (query or "").strip()
+        if len(q) < 3:
+            return []
+        token = _mapbox_token()
+        if not token:
+            return []
+        try:
+            from urllib.parse import quote
+            url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{quote(q, safe='')}.json"
+            resp = requests.get(url, params={
+                "access_token": token,
+                "country": "BR",
+                "proximity": f"{SP_CENTER[0]},{SP_CENTER[1]}",
+                "bbox": "-46.83,-24.01,-46.36,-23.36",
+                "limit": limit,
+                "language": "pt",
+                "autocomplete": "true",
+                "types": "address,poi,neighborhood,place",
+            }, timeout=4)
+            if not resp.ok:
+                return []
+            out = []
+            for f in resp.json().get("features", []):
+                lon, lat = f["center"]
+                out.append({
+                    "label": f.get("place_name", q),
+                    "text": f.get("text", ""),
+                    "lat": lat, "lon": lon,
+                })
+            return out
+        except Exception:
+            return []
+
     def reverse_geocode(self, lat: float, lon: float) -> str:
         token = _mapbox_token()
         if token:
