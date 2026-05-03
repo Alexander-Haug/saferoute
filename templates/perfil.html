@@ -26,12 +26,12 @@
           <input name="nome" value="{{ current_user.nome_completo }}" required>
         </label>
         <label class="sr-field">
-          <span>Tema</span>
-          <select name="tema">
-            <option value="claro" {% if current_user.tema == 'claro' %}selected{% endif %}>☀️ Claro</option>
-            <option value="escuro" {% if current_user.tema == 'escuro' %}selected{% endif %}>🌙 Escuro</option>
-          </select>
+          <span>E-mail</span>
+          <input value="{{ current_user.email }}" disabled>
         </label>
+        <p class="sr-mini sr-muted">
+          💡 O tema (claro/escuro) é controlado pelo botão 🌓 na barra superior.
+        </p>
         <button class="sr-btn sr-btn-primary sr-btn-pill">Salvar</button>
       </form>
     </article>

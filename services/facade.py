@@ -234,43 +234,16 @@ class SafeRouteFacade:
         bairro_d = self._nearest_bairro(*d)
         profile = MODO_PROFILE.get(modo, "walking")
 
-        # 1) Pega alternativas reais da Mapbox
+        # 1) Pega alternativas REAIS da Mapbox — não sintetiza nada.
+        #    Se vier 1, mostra 1; se vier 2, mostra 2; se vier 3, mostra 3.
         mb_routes = self._mapbox_directions(o, d, profile)
 
-        # 2) Se vieram <3, sintetiza as faltantes via waypoint deslocado
-        if len(mb_routes) < 3:
-            mid_lat = (o[0] + d[0]) / 2
-            mid_lon = (o[1] + d[1]) / 2
-            offsets = [(0.008, -0.008), (-0.008, 0.008)]
-            for off in offsets:
-                if len(mb_routes) >= 3:
-                    break
-                wp = (mid_lat + off[0], mid_lon + off[1])
-                # via lat,lon → lon,lat
-                token = _mapbox_token()
-                if not token:
-                    break
-                coords = f"{o[1]},{o[0]};{wp[1]},{wp[0]};{d[1]},{d[0]}"
-                url = f"https://api.mapbox.com/directions/v5/mapbox/{profile}/{coords}"
-                try:
-                    r = requests.get(url, params={
-                        "access_token": token,
-                        "geometries": "geojson",
-                        "overview": "full",
-                    }, timeout=8)
-                    if r.ok:
-                        rs = r.json().get("routes", [])
-                        if rs:
-                            mb_routes.append(rs[0])
-                except Exception:
-                    pass
-
-        # 3) Fallback final: linha didática (sem Mapbox/Internet)
+        # 2) Fallback didático só se Mapbox falhou completamente (sem rede/token)
         if not mb_routes:
             return self._rotas_fallback(o, d, origem, destino, modo, prioridade,
                                         horario_iso, hora, bairro_o, bairro_d, dist_total)
 
-        # 4) Calcula score por trajeto e ordena
+        # 3) Calcula score por trajeto (sample de pontos) e tempo/distância reais
         enriched = []
         for r in mb_routes[:3]:
             coords = r["geometry"]["coordinates"]  # [[lon,lat], ...]
@@ -279,47 +252,11 @@ class SafeRouteFacade:
                 "score": score, "bairro_pior": bairro_pior,
                 "distancia_km": round(r["distance"] / 1000, 2),
                 "tempo_min": max(1, round(r["duration"] / 60)),
-                "geometria": coords,  # já lon,lat — formato Mapbox GL
+                "geometria": coords,
             })
 
-        # Ordena por score crescente — mais segura primeiro
-        by_score = sorted(enriched, key=lambda x: x["score"])
-        # Ordena por tempo crescente — mais rápida primeiro
-        by_time = sorted(enriched, key=lambda x: x["tempo_min"])
-
-        segura = by_score[0]
-        rapida = by_time[0]
-        # Equilibrada: a que sobra (ou a com tempo médio se as duas coincidem)
-        outras = [r for r in enriched if r is not segura and r is not rapida]
-        equilibrada = outras[0] if outras else by_time[len(by_time) // 2]
-
-        rotas = [
-            {
-                "id": "A", "label": "Mais segura", "cor": "#10B981",
-                "score_risco": segura["score"],
-                "distancia_km": segura["distancia_km"],
-                "tempo_min": segura["tempo_min"],
-                "resumo": f"Evita áreas com mais ocorrências (pior trecho: {segura['bairro_pior']}).",
-                "geometria": segura["geometria"],
-            },
-            {
-                "id": "B", "label": "Equilibrada", "cor": "#3B82F6",
-                "score_risco": equilibrada["score"],
-                "distancia_km": equilibrada["distancia_km"],
-                "tempo_min": equilibrada["tempo_min"],
-                "resumo": "Bom compromisso entre segurança e tempo.",
-                "geometria": equilibrada["geometria"],
-            },
-            {
-                "id": "C", "label": "Mais rápida", "cor": "#F97316",
-                "score_risco": rapida["score"],
-                "distancia_km": rapida["distancia_km"],
-                "tempo_min": rapida["tempo_min"],
-                "resumo": "Trajeto mais direto — pode atravessar áreas sensíveis.",
-                "geometria": rapida["geometria"],
-            },
-        ]
-        recomendada = {"segura": "A", "rapida": "C"}.get(prioridade, "B")
+        # 4) Etiqueta as rotas por funcionalidade (ocorrências + distância)
+        rotas, recomendada = self._etiquetar_rotas(enriched, prioridade)
         trend_pct, trend_dir = self.get_trend(bairro_d)
 
         return {
@@ -330,6 +267,87 @@ class SafeRouteFacade:
             "recomendada": recomendada, "rotas": rotas,
             "tendencia_destino": {"percentual": trend_pct, "direcao": trend_dir},
         }
+
+    def _etiquetar_rotas(self, enriched: list[dict], prioridade: str) -> tuple[list[dict], str]:
+        """Decide labels (Mais segura / Equilibrada / Mais rápida) com base
+        em ocorrências (score) e distância (tempo). Mostra só o que veio:
+        1 → "Rota disponível"; 2 → "Mais segura" + "Mais rápida"; 3 → as três."""
+        # Combina score (peso 0.6) e tempo normalizado (peso 0.4) pro ranking
+        n = len(enriched)
+        if n == 1:
+            r = enriched[0]
+            rotas = [{
+                "id": "B", "label": "Rota disponível", "cor": "#3B82F6",
+                "score_risco": r["score"],
+                "distancia_km": r["distancia_km"], "tempo_min": r["tempo_min"],
+                "resumo": f"Única rota retornada pelo Mapbox para este trecho. "
+                          f"Pior trecho: {r['bairro_pior']}.",
+                "geometria": r["geometria"],
+            }]
+            return rotas, "B"
+
+        # Para 2+ rotas: ordena por score (asc) e por tempo (asc)
+        by_score = sorted(enriched, key=lambda x: x["score"])
+        by_time = sorted(enriched, key=lambda x: x["tempo_min"])
+        segura = by_score[0]
+        rapida = by_time[0]
+
+        if n == 2:
+            # Pode acontecer das duas serem o mesmo objeto se a mais segura
+            # também é a mais rápida — nesse caso, etiqueta só 2 distintas
+            if segura is rapida:
+                # Pega a outra como segunda alternativa
+                outra = [x for x in enriched if x is not segura][0]
+                rotas = [
+                    {"id": "A", "label": "Mais segura e mais rápida", "cor": "#10B981",
+                     "score_risco": segura["score"],
+                     "distancia_km": segura["distancia_km"], "tempo_min": segura["tempo_min"],
+                     "resumo": f"Vence em ambos critérios. Pior trecho: {segura['bairro_pior']}.",
+                     "geometria": segura["geometria"]},
+                    {"id": "C", "label": "Alternativa", "cor": "#F97316",
+                     "score_risco": outra["score"],
+                     "distancia_km": outra["distancia_km"], "tempo_min": outra["tempo_min"],
+                     "resumo": "Outro trajeto possível para comparação.",
+                     "geometria": outra["geometria"]},
+                ]
+                return rotas, "A"
+            rotas = [
+                {"id": "A", "label": "Mais segura", "cor": "#10B981",
+                 "score_risco": segura["score"],
+                 "distancia_km": segura["distancia_km"], "tempo_min": segura["tempo_min"],
+                 "resumo": f"Menor exposição a ocorrências. Pior trecho: {segura['bairro_pior']}.",
+                 "geometria": segura["geometria"]},
+                {"id": "C", "label": "Mais rápida", "cor": "#F97316",
+                 "score_risco": rapida["score"],
+                 "distancia_km": rapida["distancia_km"], "tempo_min": rapida["tempo_min"],
+                 "resumo": "Trajeto mais direto — pode passar por áreas sensíveis.",
+                 "geometria": rapida["geometria"]},
+            ]
+            recomendada = "A" if prioridade == "segura" else "C" if prioridade == "rapida" else "A"
+            return rotas, recomendada
+
+        # n == 3
+        outras = [r for r in enriched if r is not segura and r is not rapida]
+        equilibrada = outras[0] if outras else by_time[len(by_time) // 2]
+        rotas = [
+            {"id": "A", "label": "Mais segura", "cor": "#10B981",
+             "score_risco": segura["score"],
+             "distancia_km": segura["distancia_km"], "tempo_min": segura["tempo_min"],
+             "resumo": f"Evita áreas com mais ocorrências (pior trecho: {segura['bairro_pior']}).",
+             "geometria": segura["geometria"]},
+            {"id": "B", "label": "Equilibrada", "cor": "#3B82F6",
+             "score_risco": equilibrada["score"],
+             "distancia_km": equilibrada["distancia_km"], "tempo_min": equilibrada["tempo_min"],
+             "resumo": "Bom compromisso entre segurança e tempo.",
+             "geometria": equilibrada["geometria"]},
+            {"id": "C", "label": "Mais rápida", "cor": "#F97316",
+             "score_risco": rapida["score"],
+             "distancia_km": rapida["distancia_km"], "tempo_min": rapida["tempo_min"],
+             "resumo": "Trajeto mais direto — pode atravessar áreas sensíveis.",
+             "geometria": rapida["geometria"]},
+        ]
+        recomendada = {"segura": "A", "rapida": "C"}.get(prioridade, "B")
+        return rotas, recomendada
 
     def _rotas_fallback(self, o, d, origem, destino, modo, prioridade, horario_iso,
                         hora, bairro_o, bairro_d, dist_km):

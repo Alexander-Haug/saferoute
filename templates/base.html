@@ -6,7 +6,8 @@
   <meta name="theme-color" content="#0F172A">
   <title>{% block title %}SafeRoute{% endblock %}</title>
 
-  <link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='logo.svg') }}">
+  <link rel="alternate icon" href="{{ url_for('static', filename='logo.png') }}">
   <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 
   <link rel="preconnect" href="https://api.mapbox.com">
@@ -34,7 +35,7 @@
   {# ───────── Splash (uma vez por sessão) ───────── #}
   <div id="splash" class="sr-splash" aria-hidden="true">
     <div class="sr-splash-logo">
-      <span class="sr-splash-pin">📍</span>
+      <img src="{{ url_for('static', filename='logo.svg') }}" alt="" class="sr-splash-svg">
       <strong>SafeRoute</strong>
     </div>
     <span class="sr-splash-tag">Rotas seguras em São Paulo</span>
@@ -43,7 +44,7 @@
   {# ───────── Top bar (compacta, estilo iOS) ───────── #}
   <header class="sr-topbar">
     <a href="{{ url_for('landing') }}" class="sr-topbar-brand" aria-label="Início">
-      <span class="sr-topbar-pin">📍</span>
+      <img src="{{ url_for('static', filename='logo.svg') }}" alt="" class="sr-topbar-logo">
       <span>SafeRoute</span>
     </a>
     <div class="sr-topbar-actions">
@@ -88,11 +89,7 @@
        class="sr-bn-item {% if request.endpoint == 'historico' %}is-active{% endif %}">
       <span class="sr-bn-icon">⏱️</span><span class="sr-bn-label">Histórico</span>
     </a>
-    {# Feature 11 — Reportar #}
-    <a href="{{ url_for('reports.reportar') }}"
-       class="sr-bn-item {% if request.endpoint == 'reports.reportar' %}is-active{% endif %}">
-      <span class="sr-bn-icon">🚨</span><span class="sr-bn-label">Reportar</span>
-    </a>
+    {# Reportar agora é FAB flutuante (não mais bottom nav) #}
     {% if current_user and current_user.is_authenticated %}
       <a href="{{ url_for('auth.perfil') }}"
          class="sr-bn-item {% if request.endpoint == 'auth.perfil' %}is-active{% endif %}">
@@ -105,6 +102,14 @@
       </a>
     {% endif %}
   </nav>
+
+  {# FAB flutuante de Reportar (visível em qualquer página, exceto na própria) #}
+  {% if request.endpoint != 'reports.reportar' %}
+    <a href="{{ url_for('reports.reportar') }}" class="sr-fab-report"
+       title="Reportar ocorrência" aria-label="Reportar ocorrência">
+      <span aria-hidden="true">🚨</span>
+    </a>
+  {% endif %}
 
   <div id="toastContainer" class="sr-toast-container" aria-live="polite"></div>
 

@@ -14,6 +14,7 @@ import pytz
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for
 from flask_login import current_user
 
+from flask_login import login_required
 from services.facade import SafeRouteFacade
 from models.analytics import Analytics
 from models.db import db, HistoricoBusca
@@ -158,3 +159,26 @@ def api_compartilhar_rota():
     payload = request.get_json(force=True, silent=True) or {}
     token = SafeRouteFacade().compartilhar(payload)
     return jsonify({"id": token, "url": f"/compartilhado?id={token}"})
+
+
+@api_bp.route("/historico/<hid>", methods=["DELETE"])
+@login_required
+def api_historico_delete(hid):
+    """Apaga um item do histórico do usuário logado."""
+    from flask_login import current_user
+    h = HistoricoBusca.query.filter_by(id=hid, user_id=current_user.id).first()
+    if not h:
+        return jsonify({"erro": "não encontrada"}), 404
+    db.session.delete(h)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@api_bp.route("/historico", methods=["DELETE"])
+@login_required
+def api_historico_clear():
+    """Limpa TODO o histórico do usuário logado."""
+    from flask_login import current_user
+    HistoricoBusca.query.filter_by(user_id=current_user.id).delete()
+    db.session.commit()
+    return jsonify({"ok": True})

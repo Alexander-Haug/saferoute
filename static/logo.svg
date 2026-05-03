@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" fill="none">
+  <!-- Escudo -->
+  <path d="M128 16 L224 48 V128 C224 184 184 220 128 240 C72 220 32 184 32 128 V48 Z"
+        stroke="#1E40AF" stroke-width="14" stroke-linejoin="round" fill="none"/>
+  <!-- Pin (gota) -->
+  <path d="M128 64 C100 64 80 84 80 112 C80 140 116 168 128 184 C140 168 176 140 176 112 C176 84 156 64 128 64 Z"
+        stroke="#1E40AF" stroke-width="14" stroke-linejoin="round" fill="none"/>
+  <!-- Centro do pin -->
+  <circle cx="128" cy="112" r="14" fill="#1E40AF"/>
+</svg>

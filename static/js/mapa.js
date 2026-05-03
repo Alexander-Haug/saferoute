@@ -38,15 +38,22 @@ function initMainMap() {
     center: SP_CENTER, zoom: 11.5, pitch: 0,
   });
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
-  map.addControl(new mapboxgl.GeolocateControl({
+  // Geolocate: mostra ponto azul + acurácia + pin de localização atual
+  const geolocate = new mapboxgl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
-    trackUserLocation: false, showUserHeading: true,
-  }), 'top-right');
+    trackUserLocation: true, showUserHeading: true, showAccuracyCircle: true,
+  });
+  map.addControl(geolocate, 'top-right');
 
   let currentFilter = 'all';
 
   map.on('load', async () => {
+    // Tira o skeleton só quando o mapa de fato carregou
+    document.getElementById('mapSkeleton')?.classList.add('is-hidden');
+    setTimeout(() => document.getElementById('mapSkeleton')?.remove(), 400);
     await loadOccurrences(map, currentFilter);
+    // Tenta acionar geolocalização automática (silenciosamente — usuário precisa permitir)
+    try { geolocate.trigger(); } catch {}
   });
 
   // Re-renderiza ao mudar de tema

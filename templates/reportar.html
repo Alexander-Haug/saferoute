@@ -11,6 +11,12 @@
         Ajude a comunidade compartilhando o que você presenciou ou sentiu.
         Reportes passam por moderação antes de virar dado público.
       </p>
+      {% if anonimo %}
+        <p class="sr-mini sr-muted" style="margin-top:8px">
+          🕵️ Você está enviando como <strong>anônimo</strong>.
+          <a href="{{ url_for('auth.login') }}">Faça login</a> para acompanhar seus reportes.
+        </p>
+      {% endif %}
     </div>
   </header>
 

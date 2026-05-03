@@ -39,27 +39,39 @@
   }
   .sr-map-stage { height: 100%; min-height: 320px; }
 
+  /* Bug do print: sheet ficava bottom:72px (em cima da nav) e o "peek"
+     mostrava só 84px — o que cortava o título. Agora o sheet começa
+     ACIMA da nav (bottom = nav-height + safe-area) e o peek mostra 140px
+     (alça + título + 1 input). z-index 70 > 60 da nav pra evitar truncar. */
   .sr-sheet {
-    position: fixed; left: 0; right: 0; bottom: 72px;
-    max-height: 88vh;
+    position: fixed; left: 0; right: 0;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+    max-height: 80vh;
     border-top-left-radius: 24px; border-top-right-radius: 24px;
     box-shadow: var(--shadow-lg);
-    transform: translateY(calc(100% - 84px));
+    transform: translateY(calc(100% - 140px));
     transition: transform .3s cubic-bezier(.32, .72, 0, 1);
-    z-index: 50;
+    z-index: 70;
+    padding-bottom: 24px;
   }
-  .sr-sheet[data-state="open"] { transform: translateY(0); }
-  .sr-sheet[data-state="peek"] { transform: translateY(calc(100% - 84px)); }
-  .sr-sheet[data-state="dragging"] { transition: none; }
+  .sr-sheet[data-state="open"]    { transform: translateY(0); }
+  .sr-sheet[data-state="peek"]    { transform: translateY(calc(100% - 140px)); }
+  .sr-sheet[data-state="dragging"]{ transition: none; }
   .sr-sheet-grabber { display: block; }
 
-  .sr-fab { display: inline-flex; align-items: center; justify-content: center; }
-  .sr-sheet[data-state="open"] ~ .sr-fab { display: none; }
+  /* Esconde o FAB de busca quando o sheet está aberto pra evitar competir com Reportar */
+  .sr-fab { display: inline-flex; align-items: center; justify-content: center;
+            bottom: calc(96px + env(safe-area-inset-bottom)); left: 20px; right: auto; }
+  .sr-sheet[data-state="open"] ~ .sr-fab,
+  .sr-sheet[data-state="open"] ~ .sr-fab-report { display: none; }
 
-  /* ajustar bottom dos controles do mapa */
+  /* Reposiciona o FAB Reportar pra não colidir com o sheet em peek */
+  .sr-fab-report { bottom: calc(96px + env(safe-area-inset-bottom)); }
+
+  /* Controles do Mapbox sobem pra não ficar atrás do sheet em peek */
   .mapboxgl-ctrl-bottom-right,
-  .mapboxgl-ctrl-bottom-left { bottom: 88px !important; }
-  .sr-legend { bottom: 96px; }
+  .mapboxgl-ctrl-bottom-left { bottom: 224px !important; }
+  .sr-legend { bottom: 232px; }
 }
 
 /* ---------- Mobile pequeno (< 600px) ---------- */

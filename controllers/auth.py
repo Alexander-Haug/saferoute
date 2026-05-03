@@ -96,8 +96,9 @@ def perfil():
     if request.method == "POST":
         acao = request.form.get("acao")
         if acao == "dados":
+            # Tema agora é controlado pelo toggle 🌓 do topbar (localStorage),
+            # não vem mais do form do perfil.
             current_user.nome_completo = request.form.get("nome", "").strip() or current_user.nome_completo
-            current_user.tema = request.form.get("tema", "claro")
             db.session.commit()
             flash("Dados atualizados.", "success")
         elif acao == "senha":

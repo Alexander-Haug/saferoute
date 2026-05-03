@@ -12,6 +12,13 @@ from flask_login import login_required, current_user
 from models.db import db, Report
 
 
+def _user_id_or_none():
+    """Retorna ID do usuário logado ou None se anônimo."""
+    if current_user and current_user.is_authenticated:
+        return current_user.id
+    return None
+
+
 reports_bp = Blueprint("reports", __name__)
 
 TIPOS_VALIDOS = {
@@ -26,8 +33,9 @@ TIPOS_VALIDOS = {
 
 
 @reports_bp.route("/reportar", methods=["GET", "POST"])
-@login_required
 def reportar():
+    """Permite reportar mesmo SEM login (anônimo). Login traz benefícios:
+    histórico dos próprios reportes + opção de apagar."""
     if request.method == "POST":
         tipo = request.form.get("tipo", "").strip()
         descricao = request.form.get("descricao", "").strip()
@@ -54,7 +62,7 @@ def reportar():
                 pass
 
             r = Report(
-                user_id=current_user.id, tipo=tipo,
+                user_id=_user_id_or_none(), tipo=tipo,
                 descricao=descricao, endereco=endereco,
                 lat=lat_f, lon=lon_f, quando=quando,
             )
@@ -63,11 +71,14 @@ def reportar():
             flash("✅ Reporte enviado. Obrigado por ajudar a comunidade!", "success")
             return redirect(url_for("reports.reportar"))
 
-    meus = Report.query.filter_by(user_id=current_user.id) \
-        .order_by(Report.criado_em.desc()).limit(20).all()
-    return render_template("reportar.html",
-                           tipos=TIPOS_VALIDOS,
-                           meus=[r.to_dict() for r in meus])
+    # Lista próprios reportes só pra usuário logado
+    meus = []
+    if current_user and current_user.is_authenticated:
+        meus = Report.query.filter_by(user_id=current_user.id) \
+            .order_by(Report.criado_em.desc()).limit(20).all()
+        meus = [r.to_dict() for r in meus]
+    return render_template("reportar.html", tipos=TIPOS_VALIDOS, meus=meus,
+                           anonimo=not (current_user and current_user.is_authenticated))
 
 
 @reports_bp.route("/api/reportes/<rid>", methods=["DELETE"])

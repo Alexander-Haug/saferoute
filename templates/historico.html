@@ -3,13 +3,30 @@
 
 {% block content %}
 <section class="sr-page-shell">
-  <h1>⏱️ Suas buscas recentes</h1>
+  <header class="sr-hist-head">
+    <div>
+      <h1>⏱️ Suas buscas recentes</h1>
+      {% if logado %}
+        <p class="sr-muted">Sincronizado com sua conta.</p>
+      {% else %}
+        <p class="sr-muted">
+          Você não está logado — buscas ficam só neste navegador (localStorage).
+          <a href="{{ url_for('auth.login') }}">Faça login</a> para sincronizar.
+        </p>
+      {% endif %}
+    </div>
+    {% if items or not logado %}
+      <button id="btnLimparTudo" class="sr-btn sr-btn-ghost sr-btn-pill">
+        🗑️ Limpar tudo
+      </button>
+    {% endif %}
+  </header>
+
   {% if logado %}
-    <p class="sr-muted">Sincronizado com a sua conta.</p>
     {% if items %}
-      <ul class="sr-hist-list">
+      <ul class="sr-hist-list" id="histListServer">
         {% for h in items %}
-          <li>
+          <li data-id="{{ h.id }}">
             <a href="{{ url_for('resultado_rota', origem=h.origem, destino=h.destino, modo=h.modo, prioridade=h.prioridade) }}">
               <strong>{{ h.origem }} → {{ h.destino }}</strong>
               <span class="sr-mini sr-muted">
@@ -17,6 +34,8 @@
                 {{ h.data_busca[:16]|replace('T', ' ') }}
               </span>
             </a>
+            <button class="sr-iconbtn" data-action="del-hist" data-id="{{ h.id }}"
+                    aria-label="Remover esta busca">🗑️</button>
           </li>
         {% endfor %}
       </ul>
@@ -24,29 +43,68 @@
       <p class="sr-muted">Nenhuma busca registrada.</p>
     {% endif %}
   {% else %}
-    <p class="sr-muted">
-      Você não está logado. As buscas abaixo ficam só neste navegador (localStorage).
-      <a href="{{ url_for('auth.login') }}">Faça login</a> para sincronizar.
-    </p>
     <ul id="historicoList" class="sr-hist-list"><li class="sr-muted">Carregando…</li></ul>
   {% endif %}
 </section>
 {% endblock %}
 
 {% block scripts %}
-{% if not logado %}
 <script>
-  const lista = document.getElementById('historicoList');
-  const itens = JSON.parse(localStorage.getItem('saferoute:historico') || '[]');
-  lista.innerHTML = itens.length === 0
-    ? '<li class="sr-muted">Nenhuma busca ainda.</li>'
-    : itens.map(it => `
-        <li>
+  const logado = {{ logado|tojson }};
+
+  // ─── Não logado: histórico do localStorage ───
+  if (!logado) {
+    const lista = document.getElementById('historicoList');
+    function renderLocal() {
+      const itens = JSON.parse(localStorage.getItem('saferoute:historico') || '[]');
+      if (itens.length === 0) {
+        lista.innerHTML = '<li class="sr-muted">Nenhuma busca ainda.</li>';
+        return;
+      }
+      lista.innerHTML = itens.map((it, idx) => `
+        <li data-idx="${idx}">
           <a href="/app/rota/resultado?origem=${encodeURIComponent(it.origem)}&destino=${encodeURIComponent(it.destino)}&modo=${it.modo||'ape'}&prioridade=${it.prioridade||'equilibrada'}">
             <strong>${it.origem} → ${it.destino}</strong>
             <span class="sr-mini sr-muted">${new Date(it.ts).toLocaleString('pt-BR')}</span>
           </a>
+          <button class="sr-iconbtn" data-action="del-local" data-idx="${idx}"
+                  aria-label="Remover">🗑️</button>
         </li>`).join('');
+
+      lista.querySelectorAll('[data-action="del-local"]').forEach(b => {
+        b.addEventListener('click', () => {
+          const arr = JSON.parse(localStorage.getItem('saferoute:historico') || '[]');
+          arr.splice(parseInt(b.dataset.idx, 10), 1);
+          localStorage.setItem('saferoute:historico', JSON.stringify(arr));
+          renderLocal();
+        });
+      });
+    }
+    renderLocal();
+  }
+
+  // ─── Logado: deletar individual via API ───
+  document.querySelectorAll('[data-action="del-hist"]').forEach(b => {
+    b.addEventListener('click', async () => {
+      if (!confirm('Remover esta busca do histórico?')) return;
+      const r = await fetch(`/api/historico/${b.dataset.id}`, { method: 'DELETE' });
+      if (r.ok) b.closest('li').remove();
+    });
+  });
+
+  // ─── Limpar tudo ───
+  document.getElementById('btnLimparTudo')?.addEventListener('click', async () => {
+    if (!confirm('Limpar TODO o histórico? Essa ação não pode ser desfeita.')) return;
+    if (logado) {
+      const r = await fetch('/api/historico', { method: 'DELETE' });
+      if (r.ok) {
+        document.getElementById('histListServer')?.replaceChildren();
+        location.reload();
+      }
+    } else {
+      localStorage.removeItem('saferoute:historico');
+      location.reload();
+    }
+  });
 </script>
-{% endif %}
 {% endblock %}

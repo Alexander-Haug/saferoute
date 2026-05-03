@@ -12,6 +12,8 @@
   {# ───────── Mapa fullscreen ───────── #}
   <div class="sr-map-stage" id="mapStage">
     <div id="map" class="sr-map"></div>
+    {# Skeleton enquanto Mapbox carrega #}
+    <div id="mapSkeleton" class="sr-skeleton" aria-hidden="true"></div>
 
     {# Cards de filtro flutuantes (Tarefa 2.4) #}
     <div class="sr-cat-cards" id="catCards">
@@ -58,7 +60,10 @@
         <div class="sr-input-group">
           <input name="origem" id="origemInput" required
                  placeholder="Ex.: Av. Paulista, 1000" autocomplete="off">
-          <button type="button" class="sr-iconbtn" id="geoBtn" title="Usar minha localização">📍</button>
+          <button type="button" class="sr-iconbtn sr-iconbtn-accent" id="geoBtn"
+                  title="Usar minha posição atual" aria-label="Usar minha posição atual">
+            <span aria-hidden="true">📍</span>
+          </button>
         </div>
       </label>
 
