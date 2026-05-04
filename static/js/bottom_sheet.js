@@ -67,6 +67,14 @@
     if (mq.matches && sheet.dataset.state === 'peek') open();
   });
 
+  // Mobile UX: foco em qualquer input dentro do sheet abre automaticamente
+  // (resolve teclado virtual cobrindo input)
+  sheet.querySelectorAll('input, select, textarea, button[type="submit"]').forEach(el => {
+    el.addEventListener('focus', () => {
+      if (mq.matches && sheet.dataset.state === 'peek') open();
+    });
+  });
+
   // Em desktop, garantir aberto
   function syncDesktop() {
     if (!mq.matches) { sheet.style.transform = ''; sheet.dataset.state = 'open'; }

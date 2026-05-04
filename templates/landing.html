@@ -4,14 +4,22 @@
 
 {% block content %}
 
+{# CTA fixa no topo (acima do hero) — atalho rápido pra começar #}
+<div class="sr-top-cta">
+  <span class="sr-top-cta-text">Pronto pra calcular sua primeira rota segura?</span>
+  <a href="{{ url_for('mapa') }}" class="sr-btn sr-btn-primary sr-btn-pill">
+    Abrir mapa →
+  </a>
+</div>
+
 {# ───────── HERO ───────── #}
 <section class="sr-hero">
   <div class="sr-hero-inner">
-    <span class="sr-pill">Versão {{ metadata.version }} · {{ metadata.registros }}+ ocorrências</span>
+    <span class="sr-pill">Versão {{ metadata.version }} · 15 mil+ ocorrências analisadas</span>
     <h1>Chegue mais seguro,<br>do seu jeito.</h1>
     <p class="sr-lead">
-      Rotas inteligentes para São Paulo, calculadas com dados públicos da SSP-SP,
-      ponderadas por horário e modo de transporte.
+      Rotas inteligentes para São Paulo, com dados oficiais da SSP-SP
+      e ajuste por horário e meio de transporte.
     </p>
     <div class="sr-cta">
       <a href="{{ url_for('mapa') }}" class="sr-btn sr-btn-primary sr-btn-pill">
@@ -64,8 +72,8 @@
       </div>
       <div class="sr-step">
         <span class="sr-step-num">3</span>
-        <h3>Compare as alternativas</h3>
-        <p>Até 3 trajetos reais via Mapbox, com score de risco por bairro.</p>
+        <h3>Compare as opções</h3>
+        <p>Veja as alternativas reais lado a lado, com nota de risco por bairro.</p>
       </div>
     </div>
   </div>
@@ -75,18 +83,18 @@
 <section class="sr-features">
   <article class="sr-feat">
     <div class="sr-feat-icon">🛡️</div>
-    <h3>Score transparente</h3>
-    <p>Notas 0–10 por bairro a partir de ocorrências reais da SSP-SP.</p>
+    <h3>Notas claras de 0 a 10</h3>
+    <p>Cada bairro recebe uma nota baseada em ocorrências reais da SSP-SP.</p>
   </article>
   <article class="sr-feat">
     <div class="sr-feat-icon">🧭</div>
-    <h3>Até 3 rotas por busca</h3>
-    <p>Compare segura, equilibrada e rápida lado a lado no mapa.</p>
+    <h3>Mais segura, equilibrada ou rápida</h3>
+    <p>Você compara as opções lado a lado e escolhe o que faz sentido pra sua viagem.</p>
   </article>
   <article class="sr-feat">
     <div class="sr-feat-icon">🌙</div>
-    <h3>Sensível ao horário</h3>
-    <p>Risco recalculado conforme a hora real da viagem (madrugada pesa mais).</p>
+    <h3>Considera o horário</h3>
+    <p>A nota muda conforme a hora que você vai sair de casa.</p>
   </article>
 </section>
 
@@ -96,24 +104,24 @@
     <h2 class="sr-section-title">O que torna o SafeRoute diferente</h2>
     <div class="sr-diff-grid">
       <div class="sr-diff-card">
-        <strong>📊 Dados públicos abertos</strong>
-        <p>Base agregada da Secretaria de Segurança Pública de SP, atualizada
-           e auditável. Sem caixa-preta.</p>
+        <strong>📊 Dados oficiais e abertos</strong>
+        <p>Usamos os números da Secretaria de Segurança de SP, atualizados
+           e públicos pra qualquer um conferir.</p>
       </div>
       <div class="sr-diff-card">
-        <strong>🚀 Rotas reais via Mapbox</strong>
-        <p>Trajetos seguem ruas e ciclovias de verdade — não linha reta.
-           Cada modo usa o profile correto.</p>
+        <strong>🚀 Rotas que seguem as ruas</strong>
+        <p>Os caminhos no mapa seguem ruas e ciclovias de verdade —
+           nada de linha reta sem sentido.</p>
       </div>
       <div class="sr-diff-card">
-        <strong>🤝 Comunidade ativa</strong>
-        <p>Reporte ocorrências, iluminação ruim ou pontos seguros.
-           Reportes anônimos permitidos.</p>
+        <strong>🤝 Comunidade ajudando</strong>
+        <p>Você pode avisar sobre lugares mal iluminados ou pontos seguros.
+           Pode mandar até sem fazer cadastro.</p>
       </div>
       <div class="sr-diff-card">
-        <strong>🔐 Sua privacidade</strong>
-        <p>Telemetria anônima sem PII. Sem rastreamento.
-           Histórico só sincroniza se você optar fazendo login.</p>
+        <strong>🔐 Sua privacidade em primeiro</strong>
+        <p>Não rastreamos você. Seu histórico só fica salvo se você quiser
+           e fizer login.</p>
       </div>
     </div>
   </div>
@@ -133,61 +141,57 @@
     <h2 class="sr-section-title">Perguntas frequentes</h2>
 
     <details class="sr-faq">
-      <summary>De onde vêm os dados de ocorrências?</summary>
+      <summary>De onde vêm os dados?</summary>
       <p>São dados públicos da Secretaria de Segurança Pública de São Paulo
-         (SSP-SP), agregados por bairro, mês, hora e tipo. {{ metadata.registros }}
-         registros na versão atual ({{ metadata.ultima_atualizacao }}).</p>
+         (SSP-SP), organizados por bairro, mês, hora e tipo de ocorrência.
+         São 15 mil registros na versão atual ({{ metadata.ultima_atualizacao }}).</p>
     </details>
 
     <details class="sr-faq">
-      <summary>Como o score de risco é calculado?</summary>
-      <p>Combina densidade de ocorrências no bairro, faixa horária
-         (madrugada e noite pesam mais), gravidade do crime predominante
-         (homicídio &gt; roubo &gt; furto) e o modo de transporte
-         (a pé é o mais exposto, carro o menos).</p>
+      <summary>Como a nota de risco é calculada?</summary>
+      <p>Levamos em conta quantas ocorrências aconteceram no bairro, em qual
+         horário do dia, qual o tipo mais comum (homicídio, roubo, furto)
+         e qual o seu meio de transporte. Quem vai a pé fica mais exposto
+         que quem vai de carro.</p>
     </details>
 
     <details class="sr-faq">
-      <summary>Por que recebo só 1 ou 2 rotas às vezes?</summary>
-      <p>Mostramos apenas alternativas <strong>reais</strong> retornadas pelo
-         Mapbox Directions. Trajetos curtos ou em vias-tronco únicas costumam
-         ter só 1 caminho viável, e isso é honesto — preferimos não inventar.</p>
+      <summary>Por que às vezes aparecem só 1 ou 2 rotas?</summary>
+      <p>Só mostramos caminhos que realmente existem. Em trajetos curtos ou
+         em ruas com saída única, costuma ter só uma opção viável.</p>
     </details>
 
     <details class="sr-faq">
       <summary>Preciso criar conta?</summary>
-      <p>Não. Você pode buscar rotas, ver o mapa e até reportar ocorrências
-         de forma anônima. Criar conta serve pra <strong>sincronizar
-         favoritas e histórico</strong> entre dispositivos.</p>
+      <p>Não. Você pode buscar rotas, ver o mapa e reportar ocorrências
+         como anônimo. Criar conta serve pra <strong>guardar suas rotas
+         favoritas e histórico</strong> em qualquer aparelho.</p>
     </details>
 
     <details class="sr-faq">
       <summary>Funciona em outras cidades?</summary>
-      <p>Hoje só São Paulo. A arquitetura é genérica, mas a base de dados e
-         o `bbox` de geocoding estão limitados ao município.</p>
+      <p>Por enquanto, só São Paulo. A estrutura permite expandir depois.</p>
     </details>
 
     <details class="sr-faq">
-      <summary>Posso usar como aplicativo no celular?</summary>
-      <p>Sim — o SafeRoute é um <strong>PWA (Progressive Web App)</strong>.
-         No iOS, abra no Safari e toque em "Compartilhar → Adicionar à tela de Início".
-         No Android, o Chrome pergunta sozinho. Veja o arquivo
-         <code>MOBILE_APP.md</code> no repositório pra empacotar como
-         APK/IPA com Capacitor.</p>
+      <summary>Dá pra usar como aplicativo no celular?</summary>
+      <p>Sim. No iPhone, abra no Safari e toque em "Compartilhar → Adicionar à
+         Tela de Início". No Android, o Chrome oferece sozinho. Pronto: vira
+         um ícone como qualquer outro app.</p>
     </details>
 
     <details class="sr-faq">
-      <summary>Meus dados pessoais ficam expostos?</summary>
-      <p>Não. A telemetria interna é totalmente anônima — não armazenamos
-         e-mail, lat/lon de origem ou destino, nem qualquer ID que ligue
-         buscas a você. Reportes anônimos não têm <code>user_id</code>.</p>
+      <summary>Meus dados ficam guardados?</summary>
+      <p>Não. Não guardamos e-mail, ponto de origem nem destino — nada que
+         possa identificar você. Reportes anônimos também não levam nenhum
+         dado seu.</p>
     </details>
 
     <details class="sr-faq">
-      <summary>Como reporto um problema ou bug?</summary>
-      <p>Abra uma issue no repositório do GitHub do projeto, ou se for sobre
-         segurança pública (iluminação ruim, sensação de risco), use o botão
-         🚨 flutuante.</p>
+      <summary>Como reportar um problema?</summary>
+      <p>Se for um problema de segurança no seu trajeto (iluminação ruim,
+         lugar perigoso), use o botão vermelho 🚨 flutuante. Se for um bug
+         do site, abra uma issue no GitHub.</p>
     </details>
   </div>
 </section>

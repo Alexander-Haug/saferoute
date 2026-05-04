@@ -61,7 +61,13 @@ window.SafeRoute.startLiveRoute = function (map, dados) {
     if (!userMarker) {
       const el = document.createElement('div');
       el.className = 'sr-livepin';
-      el.innerHTML = '<span class="sr-livepin-dot"></span><span class="sr-livepin-pulse"></span>';
+      // Radar (sweep cônico) + 2 anéis pulsantes + ponto central
+      el.innerHTML = `
+        <span class="sr-radar-sweep"></span>
+        <span class="sr-livepin-pulse"></span>
+        <span class="sr-livepin-pulse sr-livepin-pulse-2"></span>
+        <span class="sr-livepin-dot"></span>
+      `;
       userMarker = new mapboxgl.Marker({ element: el }).setLngLat(u).addTo(map);
       map.easeTo({ center: u, zoom: 16 });
     } else {

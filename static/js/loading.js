@@ -9,7 +9,7 @@
   form.addEventListener('submit', () => {
     btn.disabled = true;
     btn.innerHTML = `<span class="sr-spinner" aria-hidden="true"></span>
-                     Calculando rotas seguras… consultando 15.000 ocorrências`;
+                     Calculando rotas seguras… analisando 15 mil ocorrências`;
     setTimeout(() => {
       // Em caso de back/forward cache, restaura o botão
       btn.disabled = false;

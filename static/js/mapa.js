@@ -5,8 +5,10 @@
 window.SafeRoute = window.SafeRoute || {};
 
 const SP_CENTER = [-46.6333, -23.5505];
-const STYLE_LIGHT = 'mapbox://styles/mapbox/light-v11';
-const STYLE_DARK  = 'mapbox://styles/mapbox/dark-v11';
+// Estilos com MAIS nomes de lugares (bairros, parques, pontos comerciais),
+// não só endereços. streets-v12 = referência, navigation-night = bom contraste no escuro.
+const STYLE_LIGHT = 'mapbox://styles/mapbox/streets-v12';
+const STYLE_DARK  = 'mapbox://styles/mapbox/navigation-night-v1';
 
 function currentStyle() {
   return document.documentElement.getAttribute('data-theme') === 'escuro'
@@ -229,6 +231,27 @@ async function loadOccurrences(map, filter) {
   });
 }
 
+// Toggle no mapa do resultado pra esconder/mostrar ocorrências
+function addResultMapToggle(map) {
+  const wrap = document.querySelector('.sr-result-map') || document.getElementById('resultMap')?.parentNode;
+  if (!wrap) return;
+  const btn = document.createElement('button');
+  btn.className = 'sr-result-toggle';
+  btn.innerHTML = '👁️ Ocorrências';
+  btn.title = 'Mostrar/esconder pontos de ocorrência';
+  let visible = true;
+  btn.addEventListener('click', () => {
+    visible = !visible;
+    const v = visible ? 'visible' : 'none';
+    ['oc-heat', 'oc-clusters', 'oc-cluster-count', 'oc-points'].forEach(l => {
+      if (map.getLayer(l)) map.setLayoutProperty(l, 'visibility', v);
+    });
+    btn.innerHTML = visible ? '👁️ Ocorrências' : '👁️‍🗨️ Mostrar';
+    btn.classList.toggle('is-off', !visible);
+  });
+  wrap.appendChild(btn);
+}
+
 // Alterna entre modo clusters (com números) e heatmap puro
 function applyView(map, mode) {
   const layers = ['oc-clusters', 'oc-cluster-count', 'oc-points'];
@@ -283,8 +306,18 @@ window.SafeRoute.renderResultMap = function (containerId, dados) {
   });
   map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
 
-  map.on('load', () => {
-    // 3 rotas como linhas
+  map.on('load', async () => {
+    // PRIMEIRO: ocorrências (bolinhas coloridas) — fica como camada de fundo
+    // pra usuário ver onde estão pontos importantes em volta da rota.
+    await loadOccurrences(map, 'all');
+
+    // Heatmap mais sutil pra não competir com as rotas
+    if (map.getLayer('oc-heat')) {
+      map.setPaintProperty('oc-heat', 'heatmap-opacity',
+        ['interpolate', ['linear'], ['zoom'], 7, 0.5, 15, 0.25]);
+    }
+
+    // DEPOIS: 3 rotas como linhas POR CIMA das ocorrências
     dados.rotas.forEach(r => {
       map.addSource('rota-' + r.id, {
         type: 'geojson',
@@ -301,7 +334,12 @@ window.SafeRoute.renderResultMap = function (containerId, dados) {
       });
     });
 
-    // Markers de origem/destino
+    // Garante que rotas fiquem acima de heatmap/clusters
+    ['rota-A', 'rota-B', 'rota-C'].forEach(id => {
+      if (map.getLayer(id)) map.moveLayer(id);
+    });
+
+    // Markers de origem/destino — sempre por último (em cima de tudo)
     new mapboxgl.Marker({ color: '#10B981' })
       .setLngLat([dados.origem.lon, dados.origem.lat])
       .setPopup(new mapboxgl.Popup().setText('📍 Origem'))
@@ -311,11 +349,16 @@ window.SafeRoute.renderResultMap = function (containerId, dados) {
       .setPopup(new mapboxgl.Popup().setText('🚩 Destino'))
       .addTo(map);
 
-    // Bounds
+    // Bounds englobando origem, destino E a polyline da recomendada
     const bounds = new mapboxgl.LngLatBounds()
       .extend([dados.origem.lon, dados.origem.lat])
       .extend([dados.destino.lon, dados.destino.lat]);
+    const rec = dados.rotas.find(r => r.id === dados.recomendada);
+    if (rec) rec.geometria.forEach(c => bounds.extend(c));
     map.fitBounds(bounds, { padding: 80, duration: 0 });
+
+    // Toggle pra esconder/mostrar ocorrências no mapa do resultado
+    addResultMapToggle(map);
   });
 
   // Re-render no theme change

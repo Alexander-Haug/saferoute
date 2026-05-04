@@ -2,7 +2,7 @@
   "version": "2.0.0",
   "ultima_atualizacao": "2026-04-15",
   "fonte": "SSP-SP — base agregada por bairro/hora/tipo",
-  "registros": 15000,
+  "registros": "15 mil",
   "cobertura": "Município de São Paulo",
   "metodologia": "Score 0-10 ponderado por densidade de ocorrências, faixa horária, tipo de crime e modo de transporte."
 }

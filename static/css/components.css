@@ -48,21 +48,45 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* Pin do usuário em tempo real */
+/* Pin do usuário em tempo real — com radar */
 .sr-livepin { position: relative; width: 24px; height: 24px; }
 .sr-livepin-dot {
   position: absolute; inset: 4px; border-radius: 50%;
   background: #3B82F6; border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,.3); z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,0,0,.4); z-index: 4;
 }
 .sr-livepin-pulse {
   position: absolute; inset: -4px; border-radius: 50%;
   background: rgba(59,130,246,.4);
-  animation: sr-pulse-ring 1.6s ease-out infinite;
+  animation: sr-pulse-ring 1.8s ease-out infinite;
+  z-index: 2;
 }
+.sr-livepin-pulse-2 { animation-delay: .9s; }
 @keyframes sr-pulse-ring {
   0%   { transform: scale(.6); opacity: 0.9; }
-  100% { transform: scale(1.8); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Radar — varredura cônica girando ao redor do pin */
+.sr-radar-sweep {
+  position: absolute; inset: -28px; border-radius: 50%;
+  z-index: 1; pointer-events: none;
+  background: conic-gradient(
+    from 0deg,
+    rgba(59,130,246,.55) 0deg,
+    rgba(59,130,246,.25) 18deg,
+    rgba(59,130,246,.05) 45deg,
+    transparent 90deg,
+    transparent 360deg
+  );
+  /* Mascara o centro pra deixar só o anel */
+  -webkit-mask: radial-gradient(circle, transparent 16px, #000 17px, #000 100%);
+  mask: radial-gradient(circle, transparent 16px, #000 17px, #000 100%);
+  animation: sr-radar-spin 3.2s linear infinite;
+}
+@keyframes sr-radar-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 /* Popup de ocorrência (Bug 8) */

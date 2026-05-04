@@ -75,34 +75,19 @@
 
 ### Próxima sessão
 
-#### 🎯 PRIORIDADE — Mostrar ocorrências no mapa do RESULTADO da rota
-**Pedido do usuário:** hoje a tela `/app/rota/resultado` só desenha as
-polylines das 3 rotas + pins de origem/destino. Quero que ela também
-mostre as bolinhas coloridas de ocorrências (heatmap + clusters) como
-faz a tela `/app`, pra o usuário ver onde estão os pontos sensíveis
-**em relação ao trajeto recomendado**.
+#### Bugs mobile não-resolvidos
+**O usuário reportou que a interface do celular continua "meio bugada"
+e mandou 2 vídeos WhatsApp que eu não consigo abrir.** Fiz melhorias
+genéricas (font-size 16px pra evitar zoom iOS, foco em input abre sheet,
+fade nos chips horizontais, slider e viewmode reposicionados) mas pode
+ter bug específico que só os vídeos mostram.
 
-**Implementação sugerida (≈30 min):**
-- Em `static/js/mapa.js`, dentro de `window.SafeRoute.renderResultMap`,
-  após adicionar as polylines das rotas, chamar `loadOccurrences(map, 'all')`
-  (a função já existe e cria source `ocorrencias` + layers heatmap/clusters/points).
-- Garantir que as polylines fiquem **acima** do heatmap mas **abaixo** dos
-  clusters/pontos (ordem de `addLayer`). Pode usar `map.moveLayer('rota-A', 'oc-points')`
-  pra ajustar.
-- Ajustar opacidade do heatmap pra não competir visualmente com as rotas:
-  `'heatmap-opacity': 0.5` em vez de `0.85`.
-- Considerar adicionar mini-toggle no canto do mapa do resultado pra
-  ligar/desligar a camada de ocorrências (alguns usuários podem preferir
-  mapa "limpo" só com a rota).
-- O popup ao clicar em um ponto deve continuar funcionando (já tem o
-  handler global em `loadOccurrences`).
+**Próxima sessão pedir prints ao invés de vídeo.**
 
-**Bônus (se sobrar tempo):** colorir cada segmento da rota recomendada
-conforme o score local (verde→amarelo→vermelho), em vez de cor única.
-Precisa quebrar a polyline em sub-segmentos por bairro e aplicar
-`line-color` por feature.
-
-#### Outros TODOs
+#### Bônus que ficou pra fazer
+- [ ] Colorir segmentos da rota recomendada por score local
+      (verde→amarelo→vermelho), quebrando a polyline em sub-segmentos
+      por bairro
 - [ ] OSRM como alternativa pro Mapbox Directions (fallback gratuito)
 - [ ] Reset de senha por email (SendGrid)
 - [ ] JWT + refresh tokens (substituir Flask-Login)

@@ -77,6 +77,37 @@
   .sr-viewmode { top: 60px; }
 }
 
+/* ---------- Melhorias gerais mobile UX ---------- */
+@media (max-width: 899px) {
+  /* Quando o input ganha foco, garante que ele não fica atrás do teclado */
+  html { scroll-padding-bottom: 320px; }
+  input, select, textarea { font-size: 16px; /* evita zoom-in iOS Safari */ }
+
+  /* Slider e viewmode brigando: empilha */
+  .sr-viewmode { top: 60px; left: 8px; right: auto; }
+  .sr-cat-cards { top: 110px !important; }
+
+  /* Indicação visual de scroll horizontal nos chips (fade no edge direito) */
+  .sr-cat-cards {
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%);
+            mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  /* Tap targets mínimos 44x44 — chips levemente maiores */
+  .sr-chip { min-height: 36px; padding: 8px 14px; }
+
+  /* CTA do topo precisa caber em 1 linha visualmente clara */
+  .sr-top-cta { padding: 10px 12px; gap: 10px; }
+  .sr-top-cta-text { font-size: .82rem; flex: 1; min-width: 0; }
+  .sr-top-cta .sr-btn { padding: 8px 14px; font-size: .85rem; min-height: 36px; }
+
+  /* FAB de Reportar não pode ficar em cima do toggle de heatmap */
+  .sr-result-toggle { top: 8px; right: 8px; padding: 6px 12px; font-size: .76rem; }
+
+  /* Sheet em desktop tinha overflow-y; mobile mantém */
+  .sr-sheet { padding-left: 16px; padding-right: 16px; }
+}
+
 /* ---------- Mobile pequeno (< 600px) ---------- */
 @media (max-width: 599px) {
   h1 { font-size: 1.5rem; }
