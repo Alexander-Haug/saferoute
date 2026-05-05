@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Admin · Usuários · SafeRoute{% endblock %}
+
+{% block content %}
+<section class="sr-page-shell" style="max-width: 1200px;">
+
+  <header class="sr-admin-tabs">
+    <div>
+      <h1>👥 Painel Admin</h1>
+      <p class="sr-muted">Logado como <strong>{{ current_user.email }}</strong> (admin)</p>
+    </div>
+    <nav class="sr-admin-nav">
+      <a href="{{ url_for('admin.admin_users') }}" class="sr-tab is-active">Usuários</a>
+      <a href="{{ url_for('admin.admin_analytics') }}" class="sr-tab">Analytics</a>
+    </nav>
+  </header>
+
+  {# KPIs #}
+  <section class="sr-kpi-grid sr-kpi-grid-6">
+    <div class="sr-kpi"><strong>{{ stats.total_users }}</strong><span>usuários</span></div>
+    <div class="sr-kpi"><strong>{{ stats.ativos }}</strong><span>ativos</span></div>
+    <div class="sr-kpi"><strong>{{ stats.admins }}</strong><span>admins</span></div>
+    <div class="sr-kpi"><strong>{{ stats.total_rotas }}</strong><span>rotas buscadas</span></div>
+    <div class="sr-kpi"><strong>{{ stats.total_favoritas }}</strong><span>favoritas</span></div>
+    <div class="sr-kpi"><strong>{{ stats.total_reportes }}</strong><span>reportes</span></div>
+  </section>
+
+  {# Tabela de usuários #}
+  <article class="sr-card sr-card-wide" style="margin-top: 16px;">
+    <h2>📋 Usuários cadastrados</h2>
+
+    {% if users %}
+      <div class="sr-table-wrap">
+        <table class="sr-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Nome</th>
+              <th>Cadastro</th>
+              <th>Último login</th>
+              <th>Rotas</th>
+              <th>Favoritas</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+              <tr>
+                <td>
+                  {% if u.is_admin %}<span title="Admin">👑</span>{% endif %}
+                  <strong>{{ u.email }}</strong>
+                </td>
+                <td>{{ u.nome }}</td>
+                <td><time datetime="{{ u.criado_em }}">
+                  {{ u.criado_em.strftime('%d/%m/%Y') if u.criado_em else '—' }}
+                </time></td>
+                <td>{% if u.ultimo_login %}{{ u.ultimo_login.strftime('%d/%m %H:%M') }}{% else %}<span class="sr-muted">—</span>{% endif %}</td>
+                <td>{{ u.n_rotas }}</td>
+                <td>{{ u.n_favs }}</td>
+                <td>
+                  {% if u.ativo %}<span class="sr-pill-ok">ativo</span>
+                  {% else %}<span class="sr-pill-bad">inativo</span>{% endif %}
+                </td>
+                <td>
+                  <a href="{{ url_for('admin.admin_user_detail', user_id=u.id) }}"
+                     class="sr-btn sr-btn-ghost sr-btn-pill" style="padding: 6px 12px; font-size: .82rem;">
+                    Ver →
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="sr-muted">Nenhum usuário cadastrado ainda.</p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}

@@ -7,8 +7,10 @@ window.SafeRoute = window.SafeRoute || {};
 const SP_CENTER = [-46.6333, -23.5505];
 // Estilos com MAIS nomes de lugares (bairros, parques, pontos comerciais),
 // não só endereços. streets-v12 = referência, navigation-night = bom contraste no escuro.
+// PARTE 3.3: estilos com bons rótulos de lugares.
+// streets-v12 (claro) + dark-v11 (escuro) — ambos têm POIs (parques, shoppings, restaurantes).
 const STYLE_LIGHT = 'mapbox://styles/mapbox/streets-v12';
-const STYLE_DARK  = 'mapbox://styles/mapbox/navigation-night-v1';
+const STYLE_DARK  = 'mapbox://styles/mapbox/dark-v11';
 
 function currentStyle() {
   return document.documentElement.getAttribute('data-theme') === 'escuro'

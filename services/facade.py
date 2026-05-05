@@ -112,9 +112,10 @@ class SafeRouteFacade:
             return None
         return None
 
-    def suggest(self, query: str, limit: int = 5) -> list[dict]:
-        """Sugestões de endereço pra autocomplete (Mapbox Geocoding com bbox SP).
-        Retorna [{label, lat, lon, bairro?}, ...]."""
+    def suggest(self, query: str, limit: int = 7) -> list[dict]:
+        """Sugestões de endereço/POI/lugar pra autocomplete.
+        Inclui: address (rua), poi (estabelecimentos), place/neighborhood (bairros).
+        Retorna [{label, text, lat, lon, tipo}, ...]."""
         q = (query or "").strip()
         if len(q) < 3:
             return []
@@ -132,17 +133,25 @@ class SafeRouteFacade:
                 "limit": limit,
                 "language": "pt",
                 "autocomplete": "true",
-                "types": "address,poi,neighborhood,place",
-            }, timeout=4)
+                # IMPORTANTE: "poi" = estabelecimentos (McDonald's, Parque Ibirapuera, bares).
+                # "place" = bairros/distritos. "address" = ruas com número.
+                "types": "address,poi,place,neighborhood,locality",
+            }, timeout=5)
             if not resp.ok:
                 return []
             out = []
             for f in resp.json().get("features", []):
                 lon, lat = f["center"]
+                # place_type vem como lista, ex: ["poi"] ou ["address"]
+                place_types = f.get("place_type", ["address"])
+                tipo = place_types[0] if place_types else "address"
                 out.append({
                     "label": f.get("place_name", q),
                     "text": f.get("text", ""),
                     "lat": lat, "lon": lon,
+                    "tipo": tipo,
+                    # Categoria do POI (ex: "restaurant", "park") quando disponível
+                    "categoria": (f.get("properties", {}).get("category") or "").split(",")[0].strip(),
                 })
             return out
         except Exception:

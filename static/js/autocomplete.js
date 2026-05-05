@@ -33,12 +33,34 @@
       activeIdx = -1;
     }
 
+    // Ícone por tipo de resultado
+    function iconForType(it) {
+      const tipo = (it.tipo || 'address').toLowerCase();
+      const cat = (it.categoria || '').toLowerCase();
+      // Categorias específicas de POI
+      if (cat.includes('park') || cat.includes('garden')) return '🌳';
+      if (cat.includes('restaurant') || cat.includes('food') || cat.includes('cafe')) return '🍽️';
+      if (cat.includes('bar') || cat.includes('pub') || cat.includes('night')) return '🍺';
+      if (cat.includes('shop') || cat.includes('mall') || cat.includes('store')) return '🛍️';
+      if (cat.includes('hospital') || cat.includes('clinic') || cat.includes('pharmacy')) return '🏥';
+      if (cat.includes('school') || cat.includes('university')) return '🎓';
+      if (cat.includes('hotel') || cat.includes('lodging')) return '🏨';
+      if (cat.includes('gas') || cat.includes('fuel')) return '⛽';
+      if (cat.includes('bank') || cat.includes('atm')) return '🏦';
+      // Por tipo (fallback)
+      if (tipo === 'poi') return '🏪';
+      if (tipo === 'place' || tipo === 'locality') return '🏙️';
+      if (tipo === 'neighborhood') return '🏘️';
+      return '📍'; // address
+    }
+
     function render() {
       if (!items.length) { close(); return; }
       dropdown.innerHTML = items.map((it, i) => `
         <li role="option" data-i="${i}"
-            class="sr-ac-item ${i === activeIdx ? 'is-active' : ''}">
-          <span class="sr-ac-pin">📍</span>
+            class="sr-ac-item ${i === activeIdx ? 'is-active' : ''}"
+            data-tipo="${it.tipo || 'address'}">
+          <span class="sr-ac-pin">${iconForType(it)}</span>
           <span class="sr-ac-label">
             <strong>${escapeHTML(it.text || it.label.split(',')[0])}</strong>
             <span>${escapeHTML(it.label)}</span>

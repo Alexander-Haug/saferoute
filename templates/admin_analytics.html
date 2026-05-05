@@ -3,9 +3,15 @@
 
 {% block content %}
 <section class="sr-page-shell">
-  <header>
-    <h1>📊 Analytics SafeRoute</h1>
-    <p class="sr-muted">Telemetria anônima das últimas buscas. Dados expiram em 30 dias.</p>
+  <header class="sr-admin-tabs">
+    <div>
+      <h1>📊 Analytics SafeRoute</h1>
+      <p class="sr-muted">Telemetria anônima das últimas buscas. Dados expiram em 30 dias.</p>
+    </div>
+    <nav class="sr-admin-nav">
+      <a href="{{ url_for('admin.admin_users') }}" class="sr-tab">Usuários</a>
+      <a href="{{ url_for('admin.admin_analytics') }}" class="sr-tab is-active">Analytics</a>
+    </nav>
   </header>
 
   <section class="sr-kpi-grid">

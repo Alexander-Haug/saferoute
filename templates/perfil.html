@@ -8,10 +8,20 @@
   <header class="sr-profile-hero">
     <div class="sr-avatar sr-avatar-lg">{{ current_user.nome_completo[0]|upper }}</div>
     <div>
-      <h1>{{ current_user.nome_completo }}</h1>
+      <h1>
+        {{ current_user.nome_completo }}
+        {% if current_user.is_admin %}<span title="Administrador">👑</span>{% endif %}
+      </h1>
       <p class="sr-muted">{{ current_user.email }}</p>
     </div>
-    <a href="{{ url_for('auth.logout') }}" class="sr-btn sr-btn-ghost sr-btn-pill">Sair</a>
+    <div style="margin-left: auto; display: flex; gap: 8px;">
+      {% if current_user.is_admin %}
+        <a href="{{ url_for('admin.admin_users') }}" class="sr-btn sr-btn-primary sr-btn-pill">
+          👑 Painel admin
+        </a>
+      {% endif %}
+      <a href="{{ url_for('auth.logout') }}" class="sr-btn sr-btn-ghost sr-btn-pill">Sair</a>
+    </div>
   </header>
 
   <div class="sr-profile-grid">

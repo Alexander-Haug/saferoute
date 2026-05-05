@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Admin · {{ user.email }} · SafeRoute{% endblock %}
+
+{% block content %}
+<section class="sr-page-shell" style="max-width: 1000px;">
+
+  <header class="sr-admin-tabs">
+    <div>
+      <a href="{{ url_for('admin.admin_users') }}" class="sr-link">← Voltar à lista</a>
+      <h1>{{ user.nome_completo }}</h1>
+      <p class="sr-muted">{{ user.email }}</p>
+    </div>
+  </header>
+
+  <article class="sr-card">
+    <h2>📌 Informações</h2>
+    <dl class="sr-deflist">
+      <div><dt>ID</dt><dd><code>{{ user.id }}</code></dd></div>
+      <div><dt>Cadastro</dt><dd>{{ user.criado_em.strftime('%d/%m/%Y às %H:%M') if user.criado_em else '—' }}</dd></div>
+      <div><dt>Último login</dt><dd>{{ user.ultimo_login.strftime('%d/%m/%Y às %H:%M') if user.ultimo_login else 'nunca' }}</dd></div>
+      <div><dt>Status</dt><dd>
+        {% if user.ativo %}<span class="sr-pill-ok">ativo</span>
+        {% else %}<span class="sr-pill-bad">inativo</span>{% endif %}
+      </dd></div>
+      <div><dt>Admin</dt><dd>
+        {% if user.is_admin %}👑 Sim{% else %}Não{% endif %}
+      </dd></div>
+    </dl>
+
+    <div class="sr-result-actions" style="flex-direction: row; flex-wrap: wrap;">
+      <form method="post" action="{{ url_for('admin.admin_toggle_admin', user_id=user.id) }}">
+        <button class="sr-btn {% if user.is_admin %}sr-btn-danger{% else %}sr-btn-primary{% endif %} sr-btn-pill"
+                onclick="return confirm('{% if user.is_admin %}Remover privilégios admin?{% else %}Promover a admin?{% endif %}');">
+          {% if user.is_admin %}Remover admin{% else %}👑 Tornar admin{% endif %}
+        </button>
+      </form>
+      <form method="post" action="{{ url_for('admin.admin_toggle_ativo', user_id=user.id) }}">
+        <button class="sr-btn sr-btn-ghost sr-btn-pill"
+                onclick="return confirm('Confirmar?');">
+          {% if user.ativo %}🚫 Desativar conta{% else %}✅ Reativar conta{% endif %}
+        </button>
+      </form>
+    </div>
+  </article>
+
+  <article class="sr-card sr-card-wide" style="margin-top: 16px;">
+    <h2>🔍 Histórico recente <span class="sr-muted">({{ historico|length }})</span></h2>
+    {% if historico %}
+      <ul class="sr-hist-list">
+        {% for h in historico %}
+          <li>
+            <div style="flex: 1;">
+              <strong>{{ h.origem }} → {{ h.destino }}</strong>
+              <span class="sr-mini sr-muted">
+                Score {{ h.score_risco }} · {{ h.tempo_min }}min · {{ h.modo }} ·
+                {{ h.data_busca[:16]|replace('T', ' ') }}
+              </span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}<p class="sr-muted">Sem buscas.</p>{% endif %}
+  </article>
+
+  <article class="sr-card sr-card-wide" style="margin-top: 16px;">
+    <h2>⭐ Favoritas <span class="sr-muted">({{ favoritas|length }})</span></h2>
+    {% if favoritas %}
+      <ul class="sr-fav-list">
+        {% for f in favoritas %}
+          <li>
+            <div style="flex: 1;">
+              <strong>{{ f.nome }}</strong>
+              <span class="sr-mini sr-muted">{{ f.origem }} → {{ f.destino }}</span>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}<p class="sr-muted">Sem favoritas.</p>{% endif %}
+  </article>
+
+  <article class="sr-card sr-card-wide" style="margin-top: 16px;">
+    <h2>🚨 Reportes <span class="sr-muted">({{ reportes|length }})</span></h2>
+    {% if reportes %}
+      <ul class="sr-fav-list">
+        {% for r in reportes %}
+          <li>
+            <div style="flex: 1;">
+              <strong>{{ r.tipo }}</strong>
+              <span class="sr-mini sr-muted">{{ r.endereco }} · {{ r.criado_em[:16]|replace('T', ' ') }}</span>
+              {% if r.descricao %}<p class="sr-mini">{{ r.descricao }}</p>{% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}<p class="sr-muted">Sem reportes.</p>{% endif %}
+  </article>
+
+</section>
+{% endblock %}

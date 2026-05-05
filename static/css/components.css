@@ -67,6 +67,45 @@
   100% { transform: scale(2.4); opacity: 0; }
 }
 
+/* Estado "loading" — quando ainda esperamos o GPS, dot fica cinza */
+.sr-livepin-loading .sr-livepin-dot { background: #94A3B8; }
+.sr-livepin-loading .sr-livepin-pulse { background: rgba(148,163,184,.4); }
+
+/* HUD da rota ao vivo */
+.sr-livehud {
+  position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+  z-index: 65; min-width: 280px; max-width: 90vw;
+  background: var(--glass); backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
+  border: 1px solid var(--glass-stroke); border-radius: 16px;
+  padding: 12px 16px; box-shadow: var(--shadow-lg);
+  font-size: .9rem;
+}
+.sr-livehud-stats { display: flex; gap: 24px; justify-content: space-around; }
+.sr-livehud-stat { display: flex; flex-direction: column; align-items: center; }
+.sr-livehud-stat strong { font-size: 1.4rem; color: var(--primary); font-weight: 800; }
+.sr-livehud-stat span { font-size: .72rem; color: var(--text-mute); text-transform: uppercase; }
+.sr-livehud-row { font-size: .85rem; padding: 4px 0; }
+.sr-livehud-mute { color: var(--text-mute); font-size: .78rem; }
+.sr-livehud-label { font-weight: 600; }
+.sr-livehud-warn  {
+  background: rgba(239,68,68,.1); color: var(--danger);
+  padding: 6px 10px; border-radius: 8px; font-size: .82rem; font-weight: 600;
+  margin-top: 8px; text-align: center;
+}
+.sr-livehud-ok {
+  background: rgba(16,185,129,.1); color: var(--safe);
+  padding: 6px 10px; border-radius: 8px; font-size: .82rem; font-weight: 600;
+  margin-top: 8px; text-align: center;
+}
+.sr-livehud-arrived {
+  background: var(--safe); color: #fff;
+  padding: 12px; border-radius: 8px; font-weight: 700; text-align: center;
+}
+@media (max-width: 599px) {
+  .sr-livehud { top: 64px; min-width: auto; left: 8px; right: 8px; transform: none; }
+}
+
 /* Radar — varredura cônica girando ao redor do pin */
 .sr-radar-sweep {
   position: absolute; inset: -28px; border-radius: 50%;

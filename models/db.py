@@ -29,7 +29,9 @@ class User(UserMixin, db.Model):
     foto_perfil_url = db.Column(db.String(500))
     tema = db.Column(db.String(10), default="claro")  # claro | escuro
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
+    ultimo_login = db.Column(db.DateTime)
     ativo = db.Column(db.Boolean, default=True)
+    is_admin = db.Column(db.Boolean, default=False, nullable=False, index=True)
 
     favoritas = db.relationship("RotaFavorita", backref="user", cascade="all, delete-orphan")
     historico = db.relationship("HistoricoBusca", backref="user", cascade="all, delete-orphan")
@@ -130,6 +132,31 @@ class Report(db.Model):
 
 
 def init_db(app):
-    """Cria as tabelas se não existirem (sem Alembic nesta versão)."""
+    """Cria tabelas se não existirem + auto-migração leve de colunas novas
+    (is_admin, ultimo_login) sem precisar de Alembic."""
+    from sqlalchemy import inspect, text
     with app.app_context():
         db.create_all()
+        # Auto-migração: adiciona colunas que ainda não existem em bancos antigos
+        try:
+            insp = inspect(db.engine)
+            cols = {c["name"] for c in insp.get_columns("users")}
+            with db.engine.begin() as conn:
+                if "is_admin" not in cols:
+                    conn.execute(text(
+                        "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0 NOT NULL"
+                    ))
+                if "ultimo_login" not in cols:
+                    conn.execute(text(
+                        "ALTER TABLE users ADD COLUMN ultimo_login TIMESTAMP"
+                    ))
+        except Exception as e:
+            # Em produção (Postgres) o "DEFAULT 0" pode falhar — usa FALSE
+            try:
+                with db.engine.begin() as conn:
+                    if "is_admin" not in cols:
+                        conn.execute(text(
+                            "ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE NOT NULL"
+                        ))
+            except Exception:
+                pass

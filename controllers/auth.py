@@ -44,6 +44,10 @@ def login():
         if not user.ativo:
             flash("Conta desativada.", "error")
             return render_template("auth/login.html", email=email)
+        # Atualiza último login (rastreio admin)
+        from datetime import datetime
+        user.ultimo_login = datetime.utcnow()
+        db.session.commit()
         login_user(user, remember=lembrar)
         return redirect(request.args.get("next") or url_for("mapa"))
     return render_template("auth/login.html")

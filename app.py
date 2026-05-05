@@ -85,6 +85,42 @@ def create_app() -> Flask:
 app = create_app()
 
 
+# ─────────────────────────────────────────────────────────────────────
+# CLI — comandos administrativos
+#   Uso: flask make-admin email@dominio.com
+#        flask list-users
+# ─────────────────────────────────────────────────────────────────────
+@app.cli.command("make-admin")
+def make_admin_cmd():
+    """Promove um usuário a admin (pede o email no terminal)."""
+    import click
+    email = click.prompt("Email do usuário a promover").strip().lower()
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        click.echo(f"❌ Usuário '{email}' não encontrado.")
+        return
+    user.is_admin = True
+    db.session.commit()
+    click.echo(f"✅ {email} agora é ADMIN. Acesse /admin após o login.")
+
+
+@app.cli.command("list-users")
+def list_users_cmd():
+    """Lista todos os usuários cadastrados."""
+    import click
+    users = User.query.order_by(User.criado_em.desc()).all()
+    if not users:
+        click.echo("(nenhum usuário cadastrado)")
+        return
+    click.echo(f"Total: {len(users)} usuários")
+    click.echo("-" * 80)
+    for u in users:
+        admin = "👑" if u.is_admin else "  "
+        ativo = "✅" if u.ativo else "🚫"
+        criado = u.criado_em.strftime("%d/%m/%Y") if u.criado_em else "—"
+        click.echo(f"{admin} {ativo} {u.email:35s} {u.nome_completo:25s} {criado}")
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=os.environ.get("FLASK_DEBUG") == "1")
