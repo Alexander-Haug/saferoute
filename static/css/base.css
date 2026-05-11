@@ -145,22 +145,88 @@ p  { margin: .25em 0 .75em; }
 /* FAB flutuante: Reportar — sempre visível acima da bottom nav */
 .sr-fab-report {
   position: fixed; right: 20px;
-  bottom: calc(96px + env(safe-area-inset-bottom));
+  bottom: calc(160px + env(safe-area-inset-bottom)); /* sobe pra dar lugar ao SOS */
   z-index: 55;
   width: 56px; height: 56px; border-radius: 50%;
-  background: linear-gradient(135deg, #EF4444, #DC2626);
+  background: linear-gradient(135deg, #F97316, #EA580C); /* laranja — diferenciar do SOS vermelho */
   color: #fff; font-size: 1.5rem;
   display: inline-flex; align-items: center; justify-content: center;
-  box-shadow: 0 6px 20px rgba(239,68,68,.45);
+  box-shadow: 0 6px 20px rgba(249,115,22,.45);
   text-decoration: none;
   transition: transform .12s ease, box-shadow .15s ease;
-  animation: sr-fab-pulse 2.4s ease-in-out infinite;
 }
-.sr-fab-report:hover { transform: scale(1.06); text-decoration: none; box-shadow: 0 8px 28px rgba(239,68,68,.55); }
+.sr-fab-report:hover { transform: scale(1.06); text-decoration: none; box-shadow: 0 8px 28px rgba(249,115,22,.55); }
 .sr-fab-report:active { transform: scale(.95); }
+
+/* FAB SOS — vermelho pulsante, embaixo do Reportar */
+.sr-fab-sos {
+  position: fixed; right: 20px;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 56;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, #EF4444, #B91C1C);
+  color: #fff; font-weight: 800; font-size: 1rem;
+  border: 3px solid #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 20px rgba(220,38,38,.55);
+  cursor: pointer;
+  animation: sr-fab-pulse 2s ease-in-out infinite;
+}
+.sr-fab-sos:hover { transform: scale(1.06); box-shadow: 0 8px 28px rgba(220,38,38,.7); }
+.sr-fab-sos:active { transform: scale(.92); }
+.sr-fab-sos-text { letter-spacing: .04em; }
 @keyframes sr-fab-pulse {
-  0%, 100% { box-shadow: 0 6px 20px rgba(239,68,68,.45); }
-  50%      { box-shadow: 0 6px 28px rgba(239,68,68,.7); }
+  0%, 100% { box-shadow: 0 6px 20px rgba(220,38,38,.55); }
+  50%      { box-shadow: 0 6px 32px rgba(220,38,38,.85); }
+}
+
+/* ─── Modal genérico ─── */
+.sr-modal-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0, 0, 0, .55); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px; animation: sr-modal-fade .2s ease;
+}
+@keyframes sr-modal-fade { from { opacity: 0; } to { opacity: 1; } }
+.sr-modal {
+  background: var(--bg-elev); border-radius: 24px;
+  padding: 24px; max-width: 440px; width: 100%;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+.sr-modal-close {
+  background: var(--bg-soft); width: 36px; height: 36px;
+  border-radius: 50%; cursor: pointer; font-size: 1rem;
+  border: 0; color: var(--text-mute);
+}
+
+/* ─── SOS modal ─── */
+.sr-sos-modal { border: 2px solid var(--danger); }
+.sr-sos-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.sr-sos-head h2 { color: var(--danger); margin: 0; }
+.sr-sos-options {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0;
+}
+.sr-sos-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 16px 8px; border-radius: 14px; text-decoration: none;
+  background: var(--bg-soft); transition: transform .1s ease, background-color .15s ease;
+  color: var(--text);
+}
+.sr-sos-btn:hover { transform: translateY(-2px); text-decoration: none; }
+.sr-sos-btn:active { transform: translateY(0); }
+.sr-sos-emoji { font-size: 1.8rem; }
+.sr-sos-btn strong { font-size: 1.4rem; color: var(--danger); }
+.sr-sos-btn span { font-size: .72rem; color: var(--text-mute); text-align: center; }
+.sr-sos-btn-policia:hover    { background: rgba(59,130,246,.1); }
+.sr-sos-btn-samu:hover       { background: rgba(239,68,68,.1); }
+.sr-sos-btn-bombeiros:hover  { background: rgba(249,115,22,.1); }
+.sr-sos-share {
+  margin-top: 16px; padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 
 /* Skeleton/shimmer */
@@ -405,10 +471,10 @@ p  { margin: .25em 0 .75em; }
 /* Toggle clusters/heatmap */
 .sr-viewmode {
   position: absolute; top: 70px; left: 12px; z-index: 5;
-  display: inline-flex; gap: 0;
+  display: inline-flex; gap: 0; flex-wrap: wrap;
   background: var(--glass); backdrop-filter: blur(12px);
   border: 1px solid var(--glass-stroke); border-radius: 999px;
-  padding: 4px; box-shadow: var(--shadow-sm);
+  padding: 4px; box-shadow: var(--shadow-sm); max-width: calc(100% - 24px);
 }
 .sr-vm-btn {
   background: transparent; border: 0; padding: 6px 12px;
@@ -417,6 +483,39 @@ p  { margin: .25em 0 .75em; }
   transition: background-color .15s ease, color .15s ease;
 }
 .sr-vm-btn.is-active { background: var(--primary); color: #fff; }
+#trafficToggle.is-active { background: #F59E0B; color: #fff; }
+
+/* Botão Reportar dentro do mapa (item #7) */
+.sr-map-report-btn {
+  position: absolute; top: 70px; right: 12px; z-index: 5;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, #F97316, #EA580C);
+  color: #fff; padding: 8px 14px; border-radius: 999px;
+  font-size: .82rem; font-weight: 700; text-decoration: none;
+  box-shadow: 0 4px 14px rgba(249,115,22,.4);
+  transition: transform .12s ease;
+}
+.sr-map-report-btn:hover { transform: scale(1.05); text-decoration: none; }
+
+/* Info banner (item #3 — TP em beta) */
+.sr-info-banner {
+  background: rgba(59,130,246,.1);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  padding: 10px 14px; margin-top: 12px;
+  font-size: .85rem; line-height: 1.45;
+}
+
+/* Badge de limite de velocidade (item #2) */
+.sr-speedbadge {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 60px; height: 60px; border-radius: 50%;
+  background: #fff; color: #DC2626;
+  border: 5px solid #DC2626;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.sr-speedbadge strong { font-size: 1.2rem; line-height: 1; font-weight: 800; }
+.sr-speedbadge span { font-size: .55rem; font-weight: 700; text-transform: uppercase; }
 
 /* Slider de horário */
 .sr-hourslider {
@@ -478,6 +577,9 @@ p  { margin: .25em 0 .75em; }
   border-top: 1px solid var(--border);
   display: flex; flex-direction: column;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;  /* Item #6 — scroll suave em iOS */
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;        /* não dispara scroll do body */
   padding: 8px 20px 100px;
 }
 .sr-sheet-grabber {

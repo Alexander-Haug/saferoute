@@ -161,6 +161,88 @@ def api_buscar_rota():
     return jsonify(dados)
 
 
+@api_bp.route("/speed-limit", methods=["GET"])
+def api_speed_limit():
+    """Retorna o maxspeed da via mais próxima do ponto (lat,lon).
+    Item #2: usa OpenStreetMap Overpass (Mapbox cobra speed-limit)."""
+    try:
+        lat = float(request.args.get("lat"))
+        lon = float(request.args.get("lon"))
+    except (TypeError, ValueError):
+        return jsonify({"erro": "lat/lon inválidos"}), 400
+
+    # Bounding box pequena ao redor do ponto (~80m)
+    delta = 0.0008
+    bbox = f"{lat-delta},{lon-delta},{lat+delta},{lon+delta}"
+    query = (
+        f'[out:json][timeout:5];'
+        f'way["highway"]["maxspeed"]({bbox});'
+        f'out tags geom 1;'
+    )
+    import requests as _r
+    try:
+        r = _r.post("https://overpass-api.de/api/interpreter",
+                    data=query, timeout=8,
+                    headers={"User-Agent": "SafeRoute-PUC-SP/2.x"})
+        if r.ok:
+            els = r.json().get("elements", [])
+            if els:
+                # Pega o primeiro com maxspeed válido
+                for e in els:
+                    speed = e.get("tags", {}).get("maxspeed", "")
+                    # OSM geralmente vem como "60" ou "60 km/h"
+                    digits = "".join(c for c in speed if c.isdigit())
+                    if digits:
+                        return jsonify({
+                            "limite": int(digits),
+                            "via": e.get("tags", {}).get("name", ""),
+                            "fonte": "OpenStreetMap",
+                        })
+        return jsonify({"limite": None, "via": "", "fonte": "OpenStreetMap"})
+    except Exception:
+        return jsonify({"limite": None, "via": "", "erro": "timeout"}), 504
+
+
+@api_bp.route("/radares", methods=["GET"])
+def api_radares():
+    """Item #8: radares (speed cameras) ao longo de uma bbox.
+    Frontend manda bbox = bounds da rota recomendada."""
+    bbox = request.args.get("bbox", "")  # formato: lat1,lon1,lat2,lon2
+    try:
+        parts = [float(p) for p in bbox.split(",")]
+        if len(parts) != 4:
+            raise ValueError
+    except ValueError:
+        return jsonify({"erro": "bbox inválido"}), 400
+    s, w, n, e = parts
+    query = (
+        f'[out:json][timeout:8];'
+        f'('
+        f'  node["highway"="speed_camera"]({s},{w},{n},{e});'
+        f'  node["enforcement"="maxspeed"]({s},{w},{n},{e});'
+        f');'
+        f'out body;'
+    )
+    import requests as _r
+    try:
+        r = _r.post("https://overpass-api.de/api/interpreter",
+                    data=query, timeout=12,
+                    headers={"User-Agent": "SafeRoute-PUC-SP/2.x"})
+        if r.ok:
+            radares = []
+            for el in r.json().get("elements", []):
+                if "lat" in el and "lon" in el:
+                    radares.append({
+                        "lat": el["lat"], "lon": el["lon"],
+                        "limite": el.get("tags", {}).get("maxspeed", "?"),
+                        "tipo": el.get("tags", {}).get("highway", "speed_camera"),
+                    })
+            return jsonify({"radares": radares, "fonte": "OpenStreetMap"})
+        return jsonify({"radares": []})
+    except Exception:
+        return jsonify({"radares": [], "erro": "timeout"}), 504
+
+
 @api_bp.route("/compartilhar-rota", methods=["POST"])
 def api_compartilhar_rota():
     payload = request.get_json(force=True, silent=True) or {}

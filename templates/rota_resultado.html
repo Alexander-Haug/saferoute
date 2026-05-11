@@ -53,6 +53,16 @@
           {% else %}➖{% endif %}
           {{ dados.tendencia_destino.percentual }}%
         </p>
+
+        {# Aviso item #3: TP usa proxy de carro (Mapbox não suporta transit) #}
+        {% if dados.modo == 'transporte_publico' %}
+          <div class="sr-info-banner">
+            ℹ️ <strong>Modo transporte público em beta.</strong>
+            Hoje calculamos por proxy de tráfego rodoviário —
+            <strong>não mostramos linhas de ônibus/metrô ainda</strong>.
+            Em breve vamos integrar com SPTrans/Metrô-SP.
+          </div>
+        {% endif %}
       </div>
     </header>
 

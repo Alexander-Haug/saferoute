@@ -108,6 +108,19 @@
   .sr-sheet { padding-left: 16px; padding-right: 16px; }
 }
 
+/* ─── Item #6 — viewport iPhone SE/13 (375px-390px) ─── */
+@media (max-width: 414px) {
+  /* Reportar dentro do mapa: nome cabe em 1 linha mas não compete com viewmode */
+  .sr-map-report-btn { top: 110px; padding: 6px 10px; font-size: .72rem; }
+  .sr-map-report-btn span:not([aria-hidden]) { display: none; }
+  /* SOS e Reportar FAB ficam menores */
+  .sr-fab-sos, .sr-fab-report { width: 50px; height: 50px; }
+  .sr-fab-report { font-size: 1.2rem; }
+  .sr-fab-sos-text { font-size: .85rem; }
+  /* Bottom sheet em peek mostra menos pra dar mais espaço pro mapa */
+  .sr-sheet[data-state="peek"] { transform: translateY(calc(100% - 130px)); }
+}
+
 /* ---------- Mobile pequeno (< 600px) ---------- */
 @media (max-width: 599px) {
   h1 { font-size: 1.5rem; }

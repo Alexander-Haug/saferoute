@@ -52,21 +52,30 @@ function initMainMap() {
   let currentFilter = 'all';
   let currentView = 'clusters';   // 'clusters' | 'heatmap'
   let currentHour = null;          // null = sem filtro de hora; 0-23 = filtra
+  let trafficVisible = false;
 
   map.on('load', async () => {
     document.getElementById('mapSkeleton')?.classList.add('is-hidden');
     setTimeout(() => document.getElementById('mapSkeleton')?.remove(), 400);
     await loadOccurrences(map, currentFilter);
+    addTrafficLayer(map);  // Item #4 — disponível via toggle
     try { geolocate.trigger(); } catch {}
 
-    // Toggle clusters/heatmap
-    document.querySelectorAll('#viewModeToggle .sr-vm-btn').forEach(btn => {
+    // Toggle clusters/heatmap (não mexe no botão de tráfego)
+    document.querySelectorAll('#viewModeToggle .sr-vm-btn[data-view]').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('#viewModeToggle .sr-vm-btn')
+        document.querySelectorAll('#viewModeToggle .sr-vm-btn[data-view]')
                 .forEach(b => b.classList.toggle('is-active', b === btn));
         currentView = btn.dataset.view;
         applyView(map, currentView);
       });
+    });
+
+    // Toggle tráfego (independente)
+    const trafficBtn = document.getElementById('trafficToggle');
+    trafficBtn?.addEventListener('click', () => {
+      const on = window.SafeRoute._toggleTraffic(map);
+      trafficBtn.classList.toggle('is-active', on);
     });
 
     // Slider de hora — filtra ocorrências mostradas no mapa
@@ -233,6 +242,112 @@ async function loadOccurrences(map, filter) {
   });
 }
 
+// Item #8 — Carrega radares (OSM speed_camera) ao longo da rota
+async function loadRadaresParaRota(map, geometria, bounds) {
+  // bbox da rota: minLat,minLon,maxLat,maxLon
+  const sw = bounds.getSouthWest();
+  const ne = bounds.getNorthEast();
+  const bboxParam = `${sw.lat},${sw.lng},${ne.lat},${ne.lng}`;
+  try {
+    const r = await fetch(`/api/radares?bbox=${encodeURIComponent(bboxParam)}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const radares = data.radares || [];
+    if (!radares.length) return;
+
+    map.addSource('radares', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: radares.map(rad => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [rad.lon, rad.lat] },
+          properties: { limite: rad.limite, tipo: rad.tipo },
+        })),
+      },
+    });
+    map.addLayer({
+      id: 'radares-layer',
+      type: 'circle',
+      source: 'radares',
+      paint: {
+        'circle-radius': 8,
+        'circle-color': '#7C3AED',
+        'circle-stroke-width': 2,
+        'circle-stroke-color': '#fff',
+      },
+    });
+    // Texto "📷" sobre o ponto
+    map.addLayer({
+      id: 'radares-icon',
+      type: 'symbol', source: 'radares',
+      layout: { 'text-field': '📷', 'text-size': 12, 'text-allow-overlap': true },
+    });
+
+    map.on('click', 'radares-layer', (e) => {
+      const f = e.features[0];
+      new mapboxgl.Popup({ closeButton: false })
+        .setLngLat(f.geometry.coordinates)
+        .setHTML(`
+          <div class="sr-popup">
+            <strong class="sr-popup-title">📷 Radar</strong>
+            <div class="sr-popup-row">Velocidade limite: <strong>${f.properties.limite || '?'} km/h</strong></div>
+            <div class="sr-popup-mute">Tipo: ${f.properties.tipo}</div>
+          </div>
+        `).addTo(map);
+    });
+    map.on('mouseenter', 'radares-layer', () => map.getCanvas().style.cursor = 'pointer');
+    map.on('mouseleave', 'radares-layer', () => map.getCanvas().style.cursor = '');
+  } catch (e) {
+    console.warn('[SafeRoute] radares falhou:', e);
+  }
+}
+
+// Item #2 — Badge de limite de velocidade durante navegação ao vivo
+window.SafeRoute.fetchSpeedLimit = async function (lat, lon) {
+  try {
+    const r = await fetch(`/api/speed-limit?lat=${lat}&lon=${lon}`);
+    if (!r.ok) return null;
+    const j = await r.json();
+    return j.limite;  // pode ser null se OSM não tem dado pra via
+  } catch { return null; }
+};
+
+// Item #4 — Camada de trânsito Mapbox (vetor, atualização ~5min)
+function addTrafficLayer(map) {
+  if (map.getSource('mapbox-traffic')) return;
+  map.addSource('mapbox-traffic', {
+    type: 'vector',
+    url: 'mapbox://mapbox.mapbox-traffic-v1',
+  });
+  // Adiciona camada com visibility=none — usuário liga via botão
+  map.addLayer({
+    id: 'traffic-line',
+    type: 'line',
+    source: 'mapbox-traffic',
+    'source-layer': 'traffic',
+    layout: { 'visibility': 'none', 'line-cap': 'round' },
+    paint: {
+      'line-width': 2.5,
+      'line-color': [
+        'match', ['get', 'congestion'],
+        'low', '#10B981',
+        'moderate', '#F59E0B',
+        'heavy', '#EF4444',
+        'severe', '#7F1D1D',
+        'transparent',
+      ],
+    },
+  });
+}
+window.SafeRoute._toggleTraffic = (map) => {
+  if (!map.getLayer('traffic-line')) return false;
+  const v = map.getLayoutProperty('traffic-line', 'visibility');
+  const next = v === 'visible' ? 'none' : 'visible';
+  map.setLayoutProperty('traffic-line', 'visibility', next);
+  return next === 'visible';
+};
+
 // Toggle no mapa do resultado pra esconder/mostrar ocorrências
 function addResultMapToggle(map) {
   const wrap = document.querySelector('.sr-result-map') || document.getElementById('resultMap')?.parentNode;
@@ -361,6 +476,11 @@ window.SafeRoute.renderResultMap = function (containerId, dados) {
 
     // Toggle pra esconder/mostrar ocorrências no mapa do resultado
     addResultMapToggle(map);
+
+    // Item #8 — radares ao longo de toda a rota (não só perto)
+    if (rec) {
+      loadRadaresParaRota(map, rec.geometria, bounds);
+    }
   });
 
   // Re-render no theme change

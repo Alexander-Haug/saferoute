@@ -94,6 +94,7 @@ window.SafeRoute.startLiveRoute = function (map, dados) {
     hud.className = 'sr-livehud';
     document.body.appendChild(hud);
   }
+  let speedLimit = null;  // Item #2 — última leitura
   function renderHUD({ buscando, distRest, tempoMin, foraDaRota } = {}) {
     if (buscando) {
       hud.innerHTML = `
@@ -105,6 +106,9 @@ window.SafeRoute.startLiveRoute = function (map, dados) {
         </div>`;
       return;
     }
+    const speedHTML = speedLimit
+      ? `<div class="sr-speedbadge"><strong>${speedLimit}</strong><span>km/h</span></div>`
+      : '';
     hud.innerHTML = `
       <div class="sr-livehud-stats">
         <div class="sr-livehud-stat">
@@ -115,6 +119,7 @@ window.SafeRoute.startLiveRoute = function (map, dados) {
           <strong>${fmtMin(tempoMin)}</strong>
           <span>estimado</span>
         </div>
+        ${speedHTML}
       </div>
       ${foraDaRota
         ? `<div class="sr-livehud-warn">⚠️ Você se afastou da rota</div>`
@@ -122,6 +127,9 @@ window.SafeRoute.startLiveRoute = function (map, dados) {
     `;
   }
   renderHUD({ buscando: true });
+
+  // Busca speed limit a cada ~30s (não a cada update GPS pra não sobrecarregar Overpass)
+  let lastSpeedFetch = 0;
 
   // ─── watchPosition ───
   let lastAlertTs = 0;
@@ -149,6 +157,14 @@ window.SafeRoute.startLiveRoute = function (map, dados) {
     const tempoMin = (distRest / 1000) / velKmh * 60;
 
     renderHUD({ distRest, tempoMin, foraDaRota });
+
+    // Item #2 — busca speed limit a cada 30s
+    if (Date.now() - lastSpeedFetch > 30000 && window.SafeRoute.fetchSpeedLimit) {
+      lastSpeedFetch = Date.now();
+      window.SafeRoute.fetchSpeedLimit(u[1], u[0]).then(lim => {
+        if (lim) { speedLimit = lim; renderHUD({ distRest, tempoMin, foraDaRota }); }
+      });
+    }
 
     if (foraDaRota) {
       alertaRateLimited('⚠️ Você está fora da rota recomendada (>100m).', 'error');

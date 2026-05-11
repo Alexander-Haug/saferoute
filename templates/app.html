@@ -24,11 +24,18 @@
       <button class="sr-chip sr-chip-clear" id="clearFilter">✖️ Limpar</button>
     </div>
 
-    {# Toggle de visualização: clusters vs heatmap puro #}
+    {# Toggle de visualização: clusters vs heatmap puro + tráfego #}
     <div class="sr-viewmode" id="viewModeToggle" role="group" aria-label="Modo de visualização">
       <button class="sr-vm-btn is-active" data-view="clusters" title="Mostrar números agrupados">⊕ Clusters</button>
       <button class="sr-vm-btn" data-view="heatmap" title="Mapa de calor contínuo">🔥 Calor</button>
+      <button class="sr-vm-btn" id="trafficToggle" title="Mostrar trânsito ao vivo">🚦 Trânsito</button>
     </div>
+
+    {# Botão reportar dentro do mapa (item #7) — sempre visível durante uso do mapa #}
+    <a href="{{ url_for('reports.reportar') }}" class="sr-map-report-btn"
+       title="Reportar ocorrência neste local">
+      <span aria-hidden="true">🚨</span><span>Reportar</span>
+    </a>
 
     {# Slider de horário — sensível ao horário (Tarefa 2.2 visualizada) #}
     <div class="sr-hourslider" id="hourSlider" aria-label="Hora do dia">
@@ -108,6 +115,9 @@
           <label class="sr-pill"><input type="radio" name="modo" value="carro"><span>🚗 Carro</span></label>
           <label class="sr-pill"><input type="radio" name="modo" value="transporte_publico"><span>🚌 Transporte</span></label>
         </div>
+        <p class="sr-mini sr-muted" id="modoHint" hidden>
+          ℹ️ <strong>Beta:</strong> não mostramos linhas de ônibus/metrô ainda.
+        </p>
       </fieldset>
 
       <fieldset class="sr-field sr-pillselect">

@@ -34,6 +34,17 @@
   }
   applyQuando();
 
+  // Item #3 — mostra hint quando modo "transporte_publico" é escolhido
+  const modoHint = document.getElementById('modoHint');
+  if (modoHint) {
+    function syncHint() {
+      const modoVal = (form.querySelector('input[name="modo"]:checked') || {}).value;
+      modoHint.hidden = modoVal !== 'transporte_publico';
+    }
+    form.querySelectorAll('input[name="modo"]').forEach(r => r.addEventListener('change', syncHint));
+    syncHint();
+  }
+
   // Persistir modo + prioridade
   const KEY_PREFS = 'saferoute:prefs';
   try {
@@ -45,6 +56,23 @@
     if (prefs.prioridade) {
       const p = form.querySelector(`input[name="prioridade"][value="${prefs.prioridade}"]`);
       if (p) p.checked = true;
+    }
+  } catch {}
+
+  // Bônus: pré-preenche origem/destino da última busca (persistência)
+  try {
+    const last = JSON.parse(localStorage.getItem('saferoute:lastRoute') || 'null');
+    if (last) {
+      if (!form.origem.value && last.origem) form.origem.value = last.origem;
+      if (!form.destino.value && last.destino) form.destino.value = last.destino;
+      if (last.modo) {
+        const r = form.querySelector(`input[name="modo"][value="${last.modo}"]`);
+        if (r) r.checked = true;
+      }
+      if (last.prioridade) {
+        const r = form.querySelector(`input[name="prioridade"][value="${last.prioridade}"]`);
+        if (r) r.checked = true;
+      }
     }
   } catch {}
 
@@ -69,6 +97,13 @@
       modo: form.modo.value, prioridade: form.prioridade.value,
     };
     localStorage.setItem(KEY_PREFS, JSON.stringify(prefs));
+
+    // Bônus: salva última rota completa pra persistência ao voltar
+    localStorage.setItem('saferoute:lastRoute', JSON.stringify({
+      origem: form.origem.value, destino: form.destino.value,
+      modo: form.modo.value, prioridade: form.prioridade.value,
+      ts: Date.now(),
+    }));
 
     // Histórico local (só convidado)
     if (!window.SR_CONFIG.isAuthenticated) {
