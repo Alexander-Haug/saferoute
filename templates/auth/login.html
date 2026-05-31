@@ -10,6 +10,7 @@
     <p class="sr-muted">Entre para sincronizar suas rotas favoritas.</p>
 
     <form method="post" class="sr-form sr-form-auth">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="sr-field">
         <span>E-mail</span>
         <input type="email" name="email" required autocomplete="email"

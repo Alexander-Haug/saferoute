@@ -10,7 +10,7 @@ import json
 from datetime import datetime
 import pytz
 
-from flask import Flask
+from flask import Flask, jsonify
 from flask_login import LoginManager
 from dotenv import load_dotenv
 
@@ -22,6 +22,7 @@ from models.db import db, User, init_db
 from models.data_loader import DataLoader
 from models.geocoding_cache import GeocodeCache
 from models.analytics import Analytics
+from extensions import csrf, limiter
 
 
 load_dotenv()
@@ -30,8 +31,27 @@ load_dotenv()
 def create_app() -> Flask:
     app = Flask(__name__, static_folder="static", template_folder="templates")
 
+    # ── SECRET_KEY — obrigatória em produção ──────────────────────────
+    _secret = os.environ.get("SECRET_KEY")
+    if not _secret:
+        if os.environ.get("FLASK_DEBUG") == "1":
+            import warnings
+            _secret = "dev-only-insecure-key-set-SECRET_KEY-in-env"
+            warnings.warn(
+                "\n[SafeRoute] AVISO: SECRET_KEY não definida. "
+                "Usando chave insegura de desenvolvimento. "
+                "Gere uma chave com: python -c \"import secrets; print(secrets.token_hex(32))\"\n",
+                stacklevel=2,
+            )
+        else:
+            raise RuntimeError(
+                "SECRET_KEY não definida. Defina a variável de ambiente antes de subir em produção. "
+                "Gere uma chave com: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+
     # Config
-    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-only-change-me")
+    app.config["SECRET_KEY"] = _secret
+    app.config["WTF_CSRF_TIME_LIMIT"] = 3600
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
         "DATABASE_URL", "sqlite:///saferoute.db"
     ).replace("postgres://", "postgresql://", 1)
@@ -41,6 +61,14 @@ def create_app() -> Flask:
     # DB
     db.init_app(app)
     init_db(app)
+
+    # CSRF + Rate limiting
+    csrf.init_app(app)
+    limiter.init_app(app)
+
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        return jsonify({"erro": "Muitas tentativas. Tente novamente em breve."}), 429
 
     # Login manager
     login_manager = LoginManager(app)

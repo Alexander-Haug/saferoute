@@ -18,6 +18,7 @@ from flask_login import login_required
 from services.facade import SafeRouteFacade
 from models.analytics import Analytics
 from models.db import db, HistoricoBusca
+from extensions import limiter
 
 
 api_bp = Blueprint("api", __name__)
@@ -114,6 +115,7 @@ def api_info():
 
 
 @api_bp.route("/suggest", methods=["GET"])
+@limiter.limit("60 per minute")
 def api_suggest():
     """Autocomplete de endereços. Usado pelo frontend nos campos origem/destino."""
     q = request.args.get("q", "")
@@ -132,12 +134,14 @@ def api_reverse_geocode():
 
 
 @api_bp.route("/map-data", methods=["GET"])
+@limiter.limit("20 per minute")
 def api_map_data():
     filtro = request.args.get("filter", "all")
     return jsonify(SafeRouteFacade().get_map_geojson(filtro))
 
 
 @api_bp.route("/buscar-rota", methods=["POST"])
+@limiter.limit("30 per minute")
 def api_buscar_rota():
     payload = request.get_json(force=True, silent=True) or {}
     facade = SafeRouteFacade()

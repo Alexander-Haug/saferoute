@@ -53,6 +53,8 @@
     transition: transform .3s cubic-bezier(.32, .72, 0, 1);
     z-index: 70;
     padding-bottom: 24px;
+    overflow-y: auto;
+    overscroll-behavior: contain; /* evita propagação de scroll para a página */
   }
   .sr-sheet[data-state="open"]    { transform: translateY(0); }
   .sr-sheet[data-state="peek"]    { transform: translateY(calc(100% - 140px)); }
@@ -93,8 +95,10 @@
             mask-image: linear-gradient(90deg, #000 calc(100% - 24px), transparent 100%);
   }
 
-  /* Tap targets mínimos 44x44 — chips levemente maiores */
-  .sr-chip { min-height: 36px; padding: 8px 14px; }
+  /* Tap targets mínimos 44x44 */
+  .sr-chip { min-height: 44px; padding: 10px 14px; }
+  .sr-iconbtn { min-width: 44px; min-height: 44px; touch-action: manipulation; }
+  .sr-bn-item { min-height: 44px; }
 
   /* CTA do topo precisa caber em 1 linha visualmente clara */
   .sr-top-cta { padding: 10px 12px; gap: 10px; }

@@ -30,6 +30,7 @@
     <article class="sr-card">
       <h2>👤 Dados</h2>
       <form method="post" class="sr-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="acao" value="dados">
         <label class="sr-field">
           <span>Nome completo</span>
@@ -50,6 +51,7 @@
     <article class="sr-card">
       <h2>🔒 Alterar senha</h2>
       <form method="post" class="sr-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="acao" value="senha">
         <label class="sr-field">
           <span>Senha atual</span>
@@ -113,6 +115,7 @@
       <h2>⚠️ Zona de perigo</h2>
       <p class="sr-muted">Desativar conta é reversível por suporte (soft-delete). Você sairá da sessão.</p>
       <form method="post" onsubmit="return confirm('Tem certeza que quer desativar sua conta?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="acao" value="deletar">
         <button class="sr-btn sr-btn-danger sr-btn-pill">Desativar minha conta</button>
       </form>

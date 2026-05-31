@@ -1,0 +1,17 @@
+name: Healthcheck — SafeRoute
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'   # a cada 10 minutos
+  workflow_dispatch:           # permite rodar manualmente
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping SafeRoute /api/info
+        run: |
+          echo "Pinging $APP_URL/api/info"
+          curl -fsS --max-time 30 "$APP_URL/api/info"
+        env:
+          APP_URL: ${{ secrets.APP_URL }}

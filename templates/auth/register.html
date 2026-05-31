@@ -10,6 +10,7 @@
     <p class="sr-muted">Leva menos de um minuto.</p>
 
     <form method="post" class="sr-form sr-form-auth" id="registerForm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label class="sr-field">
         <span>Nome completo</span>
         <input type="text" name="nome" required minlength="2"

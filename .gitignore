@@ -12,11 +12,17 @@ venv/
 
 # Banco local e cache gerados em runtime
 instance/
-data/saferoute.db
-data/geocode_cache.db
-data/analytics.db
+*.db
 *.sqlite
 *.sqlite3
+
+# Arquivos de dados gerados / grandes (não pertencem ao repositório)
+dados/
+data/crimes.csv
+
+# Executáveis (não pertencem ao repositório)
+static/*.exe
+static/*.msi
 
 # IDE / SO
 .vscode/

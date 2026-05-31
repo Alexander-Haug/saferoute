@@ -247,6 +247,7 @@ p  { margin: .25em 0 .75em; }
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 8px 4px; color: var(--text-mute);
   text-decoration: none; font-size: .72rem; font-weight: 600;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   border-radius: 10px;
 }
 .sr-bn-item:hover { background: var(--bg-soft); text-decoration: none; }
@@ -261,6 +262,8 @@ p  { margin: .25em 0 .75em; }
   font-weight: 700; cursor: pointer; font-size: 1rem;
   text-decoration: none; transition: transform .06s ease, background-color .15s ease, box-shadow .15s ease;
   min-height: 44px; /* touch target */
+  touch-action: manipulation; /* remove 300ms tap delay on mobile */
+  -webkit-tap-highlight-color: transparent;
 }
 .sr-btn:active { transform: translateY(1px) scale(.99); }
 .sr-btn-pill { border-radius: 999px; }

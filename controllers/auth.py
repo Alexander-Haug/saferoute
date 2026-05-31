@@ -9,11 +9,23 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_user, logout_user, login_required, current_user
 
 from models.db import db, User, RotaFavorita, HistoricoBusca
+from extensions import limiter
 
 
 auth_bp = Blueprint("auth", __name__)
 
 EMAIL_RE = re.compile(r"^[\w\.\+-]+@[\w-]+\.[\w\.-]+$")
+
+
+def _is_safe_url(target: str) -> bool:
+    """True only for relative URLs that cannot be used for open redirect."""
+    if not target:
+        return False
+    if not target.startswith("/"):
+        return False
+    if target.startswith("//"):
+        return False
+    return True
 
 
 def _validar_senha(senha: str) -> str | None:
@@ -30,6 +42,7 @@ def _validar_senha(senha: str) -> str | None:
 # Páginas
 # ---------------------------------------------------------------------------
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute", methods=["POST"])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("mapa"))
@@ -49,11 +62,13 @@ def login():
         user.ultimo_login = datetime.utcnow()
         db.session.commit()
         login_user(user, remember=lembrar)
-        return redirect(request.args.get("next") or url_for("mapa"))
+        next_url = request.args.get("next")
+        return redirect(next_url if _is_safe_url(next_url) else url_for("mapa"))
     return render_template("auth/login.html")
 
 
 @auth_bp.route("/registro", methods=["GET", "POST"])
+@limiter.limit("3 per minute", methods=["POST"])
 def registro():
     if current_user.is_authenticated:
         return redirect(url_for("mapa"))
