@@ -83,7 +83,7 @@ window.SafeRoute.startLiveRoute = function (map, dados) {
     <span class="sr-livepin-pulse sr-livepin-pulse-2"></span>
     <span class="sr-livepin-dot"></span>
   `;
-  let userMarker = new mapboxgl.Marker({ element: el }).setLngLat(startPos).addTo(map);
+  let userMarker = new maplibregl.Marker({ element: el }).setLngLat(startPos).addTo(map);
   map.easeTo({ center: startPos, zoom: 16, duration: 600 });
 
   // ─── PARTE 3.2: Cria HUD com info da rota ───

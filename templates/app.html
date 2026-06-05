@@ -3,7 +3,7 @@
 {% block body_class %}sr-page-app{% endblock %}
 
 {% block head_extra %}
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -28,7 +28,6 @@
     <div class="sr-viewmode" id="viewModeToggle" role="group" aria-label="Modo de visualização">
       <button class="sr-vm-btn is-active" data-view="clusters" title="Mostrar números agrupados">⊕ Clusters</button>
       <button class="sr-vm-btn" data-view="heatmap" title="Mapa de calor contínuo">🔥 Calor</button>
-      <button class="sr-vm-btn" id="trafficToggle" title="Mostrar trânsito ao vivo">🚦 Trânsito</button>
     </div>
 
     {# Botão reportar dentro do mapa (item #7) — sempre visível durante uso do mapa #}

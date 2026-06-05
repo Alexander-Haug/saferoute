@@ -9,40 +9,28 @@ const SP_CENTER = [-46.6333, -23.5505];
 // não só endereços. streets-v12 = referência, navigation-night = bom contraste no escuro.
 // PARTE 3.3: estilos com bons rótulos de lugares.
 // streets-v12 (claro) + dark-v11 (escuro) — ambos têm POIs (parques, shoppings, restaurantes).
-const STYLE_LIGHT = 'mapbox://styles/mapbox/streets-v12';
-const STYLE_DARK  = 'mapbox://styles/mapbox/dark-v11';
+const STYLE_LIGHT = 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json';
+const STYLE_DARK  = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 function currentStyle() {
   return document.documentElement.getAttribute('data-theme') === 'escuro'
     ? STYLE_DARK : STYLE_LIGHT;
 }
 
-function ensureToken() {
-  const t = (window.SR_CONFIG || {}).mapboxToken;
-  if (!t || t === 'None' || t === 'undefined') {
-    console.error('[SafeRoute] MAPBOX_TOKEN ausente. Configure a variável de ambiente no Render.');
-    return false;
-  }
-  mapboxgl.accessToken = t;
-  return true;
-}
-
 /* ---------- Mapa principal (app.html) ---------- */
 function initMainMap() {
   const el = document.getElementById('map');
-  if (!el || !ensureToken()) {
-    if (el) el.innerHTML = '<div style="padding:24px;text-align:center">' +
-      '⚠️ Token Mapbox não configurado.<br>Defina <code>MAPBOX_TOKEN</code> no <code>.env</code>.</div>';
-    return;
-  }
+  if (!el) return;
 
-  const map = new mapboxgl.Map({
+  const map = new maplibregl.Map({
     container: 'map', style: currentStyle(),
     center: SP_CENTER, zoom: 11.5, pitch: 0,
   });
-  map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+  map.on('error', (e) => { console.error('[SafeRoute] Erro no mapa:', e.error); });
+  map.on('load', () => { console.log('[SafeRoute] Mapa carregado com sucesso.'); });
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
   // Geolocate: mostra ponto azul + acurácia + pin de localização atual
-  const geolocate = new mapboxgl.GeolocateControl({
+  const geolocate = new maplibregl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: true, showUserHeading: true, showAccuracyCircle: true,
   });
@@ -181,7 +169,7 @@ async function loadOccurrences(map, filter) {
     const horaIni = parseInt(p.hora, 10);
     const horaFim = (horaIni + 1) % 24;
     const mes = MESES[(parseInt(p.mes, 10) - 1) % 12] || p.mes;
-    new mapboxgl.Popup({ closeButton: false, maxWidth: '260px' })
+    new maplibregl.Popup({ closeButton: false, maxWidth: '260px' })
       .setLngLat(f.geometry.coordinates)
       .setHTML(`
         <div class="sr-popup">
@@ -234,7 +222,7 @@ async function loadOccurrences(map, filter) {
           ${top.map(([b, n]) => `<div class="sr-popup-row">• ${b}: <strong>${n}</strong></div>`).join('')}
         </div>`;
       clusterHoverPopup?.remove();
-      clusterHoverPopup = new mapboxgl.Popup({
+      clusterHoverPopup = new maplibregl.Popup({
         closeButton: false, closeOnClick: false, maxWidth: '240px', offset: 12,
       }).setLngLat(f.geometry.coordinates).setHTML(html).addTo(map);
     });
@@ -285,7 +273,7 @@ async function loadRadaresParaRota(map, geometria, bounds) {
 
     map.on('click', 'radares-layer', (e) => {
       const f = e.features[0];
-      new mapboxgl.Popup({ closeButton: false })
+      new maplibregl.Popup({ closeButton: false })
         .setLngLat(f.geometry.coordinates)
         .setHTML(`
           <div class="sr-popup">
@@ -312,40 +300,10 @@ window.SafeRoute.fetchSpeedLimit = async function (lat, lon) {
   } catch { return null; }
 };
 
-// Item #4 — Camada de trânsito Mapbox (vetor, atualização ~5min)
-function addTrafficLayer(map) {
-  if (map.getSource('mapbox-traffic')) return;
-  map.addSource('mapbox-traffic', {
-    type: 'vector',
-    url: 'mapbox://mapbox.mapbox-traffic-v1',
-  });
-  // Adiciona camada com visibility=none — usuário liga via botão
-  map.addLayer({
-    id: 'traffic-line',
-    type: 'line',
-    source: 'mapbox-traffic',
-    'source-layer': 'traffic',
-    layout: { 'visibility': 'none', 'line-cap': 'round' },
-    paint: {
-      'line-width': 2.5,
-      'line-color': [
-        'match', ['get', 'congestion'],
-        'low', '#10B981',
-        'moderate', '#F59E0B',
-        'heavy', '#EF4444',
-        'severe', '#7F1D1D',
-        'transparent',
-      ],
-    },
-  });
+function addTrafficLayer(_map) {
+  // fonte mapbox:// requer token proprietário — desabilitado após migração para MapLibre
 }
-window.SafeRoute._toggleTraffic = (map) => {
-  if (!map.getLayer('traffic-line')) return false;
-  const v = map.getLayoutProperty('traffic-line', 'visibility');
-  const next = v === 'visible' ? 'none' : 'visible';
-  map.setLayoutProperty('traffic-line', 'visibility', next);
-  return next === 'visible';
-};
+window.SafeRoute._toggleTraffic = (_map) => false;
 
 // Toggle no mapa do resultado pra esconder/mostrar ocorrências
 function addResultMapToggle(map) {
@@ -413,14 +371,15 @@ function applyHourFilter(map, hour) {
 
 /* ---------- Mapa do resultado ---------- */
 window.SafeRoute.renderResultMap = function (containerId, dados) {
-  if (!ensureToken()) return;
-  const map = new mapboxgl.Map({
+  const map = new maplibregl.Map({
     container: containerId, style: currentStyle(),
     center: [(dados.origem.lon + dados.destino.lon) / 2,
              (dados.origem.lat + dados.destino.lat) / 2],
     zoom: 12,
   });
-  map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+  map.on('error', (e) => { console.error('[SafeRoute] Erro no mapa de resultado:', e.error); });
+  map.on('load', () => { console.log('[SafeRoute] Mapa de resultado carregado.'); });
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
 
   map.on('load', async () => {
     // PRIMEIRO: ocorrências (bolinhas coloridas) — fica como camada de fundo
@@ -456,17 +415,17 @@ window.SafeRoute.renderResultMap = function (containerId, dados) {
     });
 
     // Markers de origem/destino — sempre por último (em cima de tudo)
-    new mapboxgl.Marker({ color: '#10B981' })
+    new maplibregl.Marker({ color: '#10B981' })
       .setLngLat([dados.origem.lon, dados.origem.lat])
-      .setPopup(new mapboxgl.Popup().setText('📍 Origem'))
+      .setPopup(new maplibregl.Popup().setText('📍 Origem'))
       .addTo(map);
-    new mapboxgl.Marker({ color: '#EF4444' })
+    new maplibregl.Marker({ color: '#EF4444' })
       .setLngLat([dados.destino.lon, dados.destino.lat])
-      .setPopup(new mapboxgl.Popup().setText('🚩 Destino'))
+      .setPopup(new maplibregl.Popup().setText('🚩 Destino'))
       .addTo(map);
 
     // Bounds englobando origem, destino E a polyline da recomendada
-    const bounds = new mapboxgl.LngLatBounds()
+    const bounds = new maplibregl.LngLatBounds()
       .extend([dados.origem.lon, dados.origem.lat])
       .extend([dados.destino.lon, dados.destino.lat]);
     const rec = dados.rotas.find(r => r.id === dados.recomendada);
@@ -485,6 +444,8 @@ window.SafeRoute.renderResultMap = function (containerId, dados) {
   // Re-render no theme change
   new MutationObserver(() => map.setStyle(currentStyle()))
     .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  map.on('style.load', () => loadOccurrences(map, 'all'));
 
   // Cards clicáveis destacam a rota
   document.querySelectorAll('.sr-route-card').forEach(card => {
