@@ -92,6 +92,15 @@ def create_app() -> Flask:
     app.register_blueprint(auth_bp)      # /login, /registro, /perfil, /api/favoritas
     app.register_blueprint(reports_bp)   # /reportar, /api/reportes
 
+    # Filtro de data: "2026-04-15" → "15/04/2026". Fallback seguro: se o
+    # valor não estiver no formato ISO esperado, devolve o original intacto.
+    @app.template_filter("data_br")
+    def _data_br(value):
+        try:
+            return datetime.strptime(str(value), "%Y-%m-%d").strftime("%d/%m/%Y")
+        except (ValueError, TypeError):
+            return value
+
     # Variáveis disponíveis em todos os templates (footer, mapbox token, etc)
     @app.context_processor
     def inject_globals():

@@ -242,6 +242,46 @@ class SafeRouteFacade:
             return []
         return []
 
+    def _osrm_directions(self, o: tuple[float, float], d: tuple[float, float],
+                         modo: str) -> list[dict]:
+        """Rotas reais via OSRM público (router.project-osrm.org) — SEM token.
+        A geometria segue as ruas de verdade (não linha reta).
+
+        O servidor demo do OSRM só expõe o perfil de carro; por isso usamos a
+        geometria de ruas para todos os modos e recalculamos a duração pela
+        velocidade típica do modo (a pé/bici/TP) — carro mantém o tempo do OSRM.
+        Retorna a MESMA forma que _mapbox_directions:
+        {"distance": m, "duration": s, "geometry": {GeoJSON LineString}}.
+        """
+        coords = f"{o[1]},{o[0]};{d[1]},{d[0]}"  # lon,lat;lon,lat
+        url = f"https://router.project-osrm.org/route/v1/driving/{coords}"
+        try:
+            resp = requests.get(url, params={
+                "alternatives": "true",
+                "overview": "full",
+                "geometries": "geojson",
+            }, timeout=10, headers={"User-Agent": "SafeRoute-PUC-SP/2.x"})
+            if not resp.ok:
+                return []
+            routes = resp.json().get("routes", [])
+        except Exception:
+            return []
+
+        # Velocidade por modo (km/h). carro = None → mantém duração do OSRM.
+        vel_kmh = {"ape": 5, "a_pe": 5, "bicicleta": 15,
+                   "transporte_publico": 20, "carro": None}.get(modo, None)
+        out = []
+        for r in routes:
+            dist = r.get("distance", 0.0)
+            dur = r.get("duration", 0.0)
+            if vel_kmh:  # modos não-carro: tempo = distância / velocidade
+                dur = dist / (vel_kmh / 3.6)
+            geom = r.get("geometry") or {"type": "LineString", "coordinates": []}
+            if not geom.get("coordinates"):
+                continue
+            out.append({"distance": dist, "duration": dur, "geometry": geom})
+        return out
+
     def get_route_details(self, origem: str, destino: str, horario_iso: str,
                           prioridade: str = "equilibrada", modo: str = "ape") -> dict:
         # Validação prévia (Bug 5)
@@ -279,18 +319,21 @@ class SafeRouteFacade:
         bairro_d = self._nearest_bairro(*d)
         profile = MODO_PROFILE.get(modo, "walking")
 
-        # 1) Pega alternativas REAIS da Mapbox — não sintetiza nada.
+        # 1) Rotas REAIS que seguem as ruas — não sintetiza nada.
+        #    Mapbox Directions se houver token; senão OSRM público (sem token).
         #    Se vier 1, mostra 1; se vier 2, mostra 2; se vier 3, mostra 3.
-        mb_routes = self._mapbox_directions(o, d, profile)
+        rotas_reais = self._mapbox_directions(o, d, profile) if _mapbox_token() else []
+        if not rotas_reais:
+            rotas_reais = self._osrm_directions(o, d, modo)
 
-        # 2) Fallback didático só se Mapbox falhou completamente (sem rede/token)
-        if not mb_routes:
+        # 2) Fallback didático (linha reta) só se NENHUM roteador respondeu
+        if not rotas_reais:
             return self._rotas_fallback(o, d, origem, destino, modo, prioridade,
                                         horario_iso, hora, bairro_o, bairro_d, dist_total)
 
         # 3) Calcula score por trajeto (sample de pontos) e tempo/distância reais
         enriched = []
-        for r in mb_routes[:3]:
+        for r in rotas_reais[:3]:
             coords = r["geometry"]["coordinates"]  # [[lon,lat], ...]
             score, bairro_pior = self._score_trajeto(coords, hora, modo)
             enriched.append({

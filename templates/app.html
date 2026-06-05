@@ -63,7 +63,7 @@
         <p class="sr-muted">
           Score baseado em
           <strong>{{ metadata.registros }}</strong> ocorrências ·
-          atualizado em {{ metadata.ultima_atualizacao }}
+          atualizado em {{ metadata.ultima_atualizacao | data_br }}
         </p>
       </div>
     </header>
@@ -149,7 +149,7 @@
     <details class="sr-method">
       <summary>ℹ️ Sobre a metodologia</summary>
       <p>{{ metadata.metodologia }}</p>
-      <p>Fonte: {{ metadata.fonte }} · Atualização: {{ metadata.ultima_atualizacao }}.</p>
+      <p>Fonte: {{ metadata.fonte }} · Atualização: {{ metadata.ultima_atualizacao | data_br }}.</p>
     </details>
   </aside>
 </div>

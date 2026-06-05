@@ -2,20 +2,29 @@
    components.css — overrides finos do Mapbox + tooltips
    ============================================================ */
 
-/* Mapbox: deixar atribuição menor e harmonizada com o tema */
-.mapboxgl-ctrl-attrib {
+/* Controles e popups do mapa harmonizados com o tema.
+   Cobre Mapbox (.mapboxgl-*) E MapLibre (.maplibregl-*) — após a migração
+   para MapLibre, só os seletores .maplibregl-* têm efeito; manter ambos
+   evita "branco no branco" no popup em modo escuro. */
+.mapboxgl-ctrl-attrib,
+.maplibregl-ctrl-attrib {
   background: var(--glass) !important;
   font-size: 10px !important;
 }
-.mapboxgl-ctrl-group {
+.mapboxgl-ctrl-attrib a,
+.maplibregl-ctrl-attrib a { color: var(--text-mute) !important; }
+.mapboxgl-ctrl-group,
+.maplibregl-ctrl-group {
   background: var(--bg-elev) !important;
   border: 1px solid var(--border) !important;
   box-shadow: var(--shadow-sm) !important;
   border-radius: 12px !important;
   overflow: hidden;
 }
-.mapboxgl-ctrl-group button { width: 36px !important; height: 36px !important; }
-.mapboxgl-popup-content {
+.mapboxgl-ctrl-group button,
+.maplibregl-ctrl-group button { width: 36px !important; height: 36px !important; }
+.mapboxgl-popup-content,
+.maplibregl-popup-content {
   background: var(--bg-elev) !important;
   color: var(--text) !important;
   border-radius: 12px !important;
@@ -23,7 +32,14 @@
   font-family: inherit;
   padding: 12px 14px !important;
 }
-.mapboxgl-popup-tip { display: none !important; }
+/* Markers de origem/destino abrem popup COM botão fechar — garante contraste */
+.mapboxgl-popup-close-button,
+.maplibregl-popup-close-button {
+  color: var(--text-mute) !important;
+  font-size: 1.1rem !important;
+}
+.mapboxgl-popup-tip,
+.maplibregl-popup-tip { display: none !important; }
 
 /* Autocomplete de endereço */
 .sr-ac-wrap { position: relative; flex: 1; }
@@ -33,7 +49,18 @@
   background: var(--bg-elev); border: 1px solid var(--border);
   border-radius: 12px; box-shadow: var(--shadow-lg);
   list-style: none; padding: 4px; margin: 0;
+  transition: opacity .2s ease;
 }
+
+/* Spinner de carregamento do autocomplete (Tarefa 3.3) */
+.sr-ac-spinner {
+  position: absolute; top: 50%; right: 12px; margin-top: -8px;
+  width: 16px; height: 16px; z-index: 81;
+  border: 2px solid var(--border); border-top-color: var(--primary);
+  border-radius: 50%; pointer-events: none;
+  animation: sr-ac-spin .6s linear infinite;
+}
+@keyframes sr-ac-spin { to { transform: rotate(360deg); } }
 .sr-ac-item {
   display: flex; align-items: flex-start; gap: 10px;
   padding: 10px 12px; border-radius: 8px; cursor: pointer;

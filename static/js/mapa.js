@@ -465,12 +465,21 @@ window.SafeRoute.renderResultMap = function (containerId, dados) {
 
 /* ---------- Wiring de ações da tela de resultado ---------- */
 window.SafeRoute.wireResultActions = function (dados, mapInstance) {
-  // Deep link Google Maps
+  // Deep link Google Maps — rota LIMPA (sem paradas intermediárias).
+  // A URL pública do Google (api=1) transforma qualquer waypoint em "parada"
+  // numerada, então passamos só origem + destino + travelmode equivalente ao
+  // modo escolhido. O Google traça o caminho; a polyline EXATA do SafeRoute
+  // (incl. desvio "mais seguro") continua no "Acompanhar rota ao vivo".
   const nav = document.getElementById('btnNavegar');
   if (nav) {
     const o = `${dados.origem.lat},${dados.origem.lon}`;
     const d = `${dados.destino.lat},${dados.destino.lon}`;
-    nav.href = `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}`;
+    const travelMode = {
+      ape: 'walking', a_pe: 'walking', bicicleta: 'bicycling',
+      carro: 'driving', transporte_publico: 'transit',
+    }[dados.modo] || 'driving';
+    nav.href = `https://www.google.com/maps/dir/?api=1&origin=${o}` +
+               `&destination=${d}&travelmode=${travelMode}`;
   }
 
   // Favoritar (Tarefa 4.4)

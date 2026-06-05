@@ -249,6 +249,7 @@ p  { margin: .25em 0 .75em; }
   text-decoration: none; font-size: .72rem; font-weight: 600;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   border-radius: 10px;
+  transition: background-color .15s ease, color .15s ease;
 }
 .sr-bn-item:hover { background: var(--bg-soft); text-decoration: none; }
 .sr-bn-icon { font-size: 1.35rem; line-height: 1; }
@@ -435,9 +436,11 @@ p  { margin: .25em 0 .75em; }
 .sr-map-stage { position: relative; min-height: 100%; }
 .sr-map { width: 100%; height: 100%; }
 
-/* Mapbox controls reposicionar pra não colidir com bottom nav */
+/* Controles do mapa reposicionar pra não colidir com bottom nav */
 .mapboxgl-ctrl-bottom-right,
-.mapboxgl-ctrl-bottom-left { bottom: 84px !important; }
+.mapboxgl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left { bottom: 84px !important; }
 
 /* Cards de filtro (chips) */
 .sr-cat-cards {
@@ -452,6 +455,7 @@ p  { margin: .25em 0 .75em; }
   border: 1px solid var(--glass-stroke); color: var(--text);
   font-size: .82rem; font-weight: 600; cursor: pointer;
   box-shadow: var(--shadow-sm); white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
 }
 .sr-chip:hover { background: var(--bg-elev); }
 .sr-chip.is-active { background: var(--primary); color: #fff; border-color: var(--primary); }

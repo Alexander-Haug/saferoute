@@ -70,9 +70,11 @@
   /* Reposiciona o FAB Reportar pra não colidir com o sheet em peek */
   .sr-fab-report { bottom: calc(96px + env(safe-area-inset-bottom)); }
 
-  /* Controles do Mapbox sobem pra não ficar atrás do sheet em peek */
+  /* Controles do mapa sobem pra não ficar atrás do sheet em peek */
   .mapboxgl-ctrl-bottom-right,
-  .mapboxgl-ctrl-bottom-left { bottom: 280px !important; }
+  .mapboxgl-ctrl-bottom-left,
+  .maplibregl-ctrl-bottom-right,
+  .maplibregl-ctrl-bottom-left { bottom: 280px !important; }
   .sr-legend { bottom: 288px; }
   .sr-hourslider { bottom: 232px; left: 8px; right: 8px; padding: 6px 12px; }
   .sr-hourslider .sr-hs-label { font-size: .72rem; }

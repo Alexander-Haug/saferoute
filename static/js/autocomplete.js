@@ -22,15 +22,26 @@
     dropdown.hidden = true;
     wrap.appendChild(dropdown);
 
+    // Spinner de carregamento (Tarefa 3.3) — overlay no canto direito do input
+    const spinner = document.createElement('span');
+    spinner.className = 'sr-ac-spinner';
+    spinner.hidden = true;
+    spinner.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(spinner);
+
     let timer = null;
     let activeIdx = -1;
     let items = [];
     let lastQuery = '';
     let aborter = null;
+    let reqId = 0;  // protege contra race: só a requisição mais recente vale
+
+    function showSpinner(on) { spinner.hidden = !on; }
 
     function close() {
       dropdown.hidden = true;
       activeIdx = -1;
+      showSpinner(false);
     }
 
     // Ícone por tipo de resultado
@@ -82,14 +93,19 @@
     async function fetchSuggestions(q) {
       if (aborter) aborter.abort();
       aborter = new AbortController();
+      const myId = ++reqId;
+      showSpinner(true);
       try {
         const r = await fetch('/api/suggest?q=' + encodeURIComponent(q),
                               { signal: aborter.signal });
+        if (myId !== reqId) return;   // resposta obsoleta — chegou outra depois
         if (!r.ok) return;
         items = await r.json();
+        if (myId !== reqId) return;
         activeIdx = -1;
         render();
       } catch (e) { /* aborted ou network */ }
+      finally { if (myId === reqId) showSpinner(false); }
     }
 
     input.setAttribute('autocomplete', 'off');
