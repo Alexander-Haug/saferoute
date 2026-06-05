@@ -19,9 +19,8 @@ function currentStyle() {
 
 function ensureToken() {
   const t = (window.SR_CONFIG || {}).mapboxToken;
-  if (!t) {
-    console.warn('[SafeRoute] MAPBOX_TOKEN não configurado. ' +
-      'Crie um token público no Mapbox e coloque no .env como MAPBOX_TOKEN=pk....');
+  if (!t || t === 'None' || t === 'undefined') {
+    console.error('[SafeRoute] MAPBOX_TOKEN ausente. Configure a variável de ambiente no Render.');
     return false;
   }
   mapboxgl.accessToken = t;
