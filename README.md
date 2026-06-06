@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🗺️ SafeRoute
+# SafeRoute
 
 **Navegue por São Paulo com mais segurança.**  
 Rotas inteligentes geradas a partir de dados reais de criminalidade da SSP-SP.
@@ -17,7 +17,7 @@ Rotas inteligentes geradas a partir de dados reais de criminalidade da SSP-SP.
 
 ---
 
-## 📌 Sobre o projeto
+## Sobre o projeto
 
 São Paulo concentra milhares de registros de ocorrências criminais por mês — informação pública, porém inacessível ao cidadão comum. Turistas e visitantes navegam pela cidade sem qualquer noção dos horários e regiões de maior risco.
 
@@ -27,7 +27,7 @@ O **SafeRoute** resolve isso. A aplicação consome dados abertos da [SSP-SP](ht
 
 ---
 
-## ✨ Funcionalidades
+## Funcionalidades
 
 - 🛣️ **Rotas seguras** — calcula até 3 rotas alternativas priorizando segurança, velocidade ou equilíbrio entre os dois
 - 🗺️ **Mapa de risco por bairro** — visualização choropleth com segmentos de rua coloridos por nível de perigo
@@ -39,7 +39,7 @@ O **SafeRoute** resolve isso. A aplicação consome dados abertos da [SSP-SP](ht
 
 ---
 
-## 🛠️ Stack tecnológica
+## Stack tecnológica
 
 | Camada | Tecnologia |
 |--------|-----------|
@@ -56,7 +56,7 @@ O **SafeRoute** resolve isso. A aplicação consome dados abertos da [SSP-SP](ht
 
 ---
 
-## 🏗️ Design Patterns aplicados
+## Design Patterns aplicados
 
 O projeto implementa um padrão de cada categoria do GoF:
 
@@ -68,7 +68,7 @@ O projeto implementa um padrão de cada categoria do GoF:
 
 ---
 
-## 🚀 Como rodar localmente
+## Como rodar localmente
 
 ### Pré-requisitos
 
@@ -105,7 +105,7 @@ Acesse `http://localhost:5000` no navegador.
 
 ---
 
-## 📁 Estrutura do projeto
+## Estrutura do projeto
 
 ```
 saferoute/
@@ -125,21 +125,21 @@ saferoute/
 
 ---
 
-## 👥 Equipe
+## Equipe
 
 Desenvolvido por estudantes do curso **CDIA** da **PUC-SP**:
 
 | Contribuidor | GitHub |
 |---|---|
 | **Alexander Haug** ⭐ | [@Alexander-Haug](https://github.com/Alexander-Haug) |
-| Arthur | — |
-| Carlos Calil | — |
+| Arthur | - |
+| Carlos Calil | [@calilprime](https://github.com/calilprime) |
 | Felipe | — |
 | Marina Pereira | — |
 
 ---
 
-## 🎓 Contexto acadêmico
+## Contexto acadêmico
 
 | | |
 |---|---|
@@ -151,7 +151,7 @@ Desenvolvido por estudantes do curso **CDIA** da **PUC-SP**:
 
 ---
 
-## 📄 Licença
+## Licença
 
 Este projeto foi desenvolvido para fins acadêmicos. Dados de criminalidade utilizados são de domínio público, disponibilizados pela [SSP-SP](https://www.ssp.sp.gov.br/).
 
